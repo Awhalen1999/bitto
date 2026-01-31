@@ -30,7 +30,7 @@ export function UserDropdown() {
   };
 
   const initials =
-    user?.displayName?.[0]?.toUpperCase() ||
+    user?.displayName?.trim().split(/\s+/)[0]?.[0]?.toUpperCase() ||
     user?.email?.[0]?.toUpperCase() ||
     "U";
 
@@ -40,17 +40,9 @@ export function UserDropdown() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 w-full p-2 hover:bg-zinc-800 rounded-lg transition-colors"
       >
-        {/* Avatar */}
-        <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-          {user?.photoURL ? (
-            <img
-              src={user.photoURL}
-              alt=""
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            initials
-          )}
+        {/* Avatar - initials until we support pfp uploads */}
+        <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-white text-sm font-medium shrink-0">
+          {initials}
         </div>
 
         {/* User Info */}
@@ -63,7 +55,7 @@ export function UserDropdown() {
 
         {/* Chevron */}
         <ChevronDown
-          className={`w-4 h-4 text-zinc-400 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""}`}
+          className={`w-4 h-4 text-zinc-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
