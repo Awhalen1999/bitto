@@ -19,3 +19,10 @@ export async function getCanvases(
 ): Promise<Canvas[]> {
   return apiClient(`/api/canvases?view=${view}&sort=${sort}`);
 }
+
+export async function createCanvas(data: { name: string }): Promise<Canvas> {
+  return apiClient("/api/canvases", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
