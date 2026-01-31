@@ -4,6 +4,8 @@ import { useSearchParams } from "next/navigation";
 import { useCanvases } from "@/lib/hooks/useCanvases";
 import { SortOption } from "@/lib/components/dashboard/DashboardHeader";
 import { ViewType } from "@/lib/api/canvases";
+import { CanvasGrid } from "./CanvasGrid";
+import { FileText } from "lucide-react";
 
 interface CanvasViewProps {
   view: ViewType;
@@ -49,11 +51,19 @@ export function CanvasView({
       <p className="text-sm text-zinc-400 mb-6">{subtitle}</p>
 
       {!canvases || canvases.length === 0 ? (
-        <div className="text-zinc-400">
-          {emptyMessage || "No canvases yet. Create one to get started!"}
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+            <FileText className="w-8 h-8 text-zinc-600" />
+          </div>
+          <p className="text-zinc-400 text-lg mb-2">
+            {emptyMessage || "No canvases yet"}
+          </p>
+          <p className="text-zinc-500 text-sm">
+            Create your first canvas to get started
+          </p>
         </div>
       ) : (
-        <div className="text-zinc-400">Found {canvases.length} canvas(es)</div>
+        <CanvasGrid canvases={canvases} />
       )}
     </div>
   );
