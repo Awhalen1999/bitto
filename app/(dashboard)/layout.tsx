@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from "@/lib/hooks/useAuth";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { DashboardSidebar } from "@/lib/components/dashboard/DashboardSidebar";
 import {
   DashboardHeader,
@@ -16,13 +16,9 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Get sort from URL or default to 'last-modified'
-  const [sortBy, setSortBy] = useState<SortOption>(
-    (searchParams.get("sort") as SortOption) || "last-modified",
-  );
+  const sortBy = (searchParams.get("sort") as SortOption) || "last-modified";
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,15 +27,21 @@ export default function DashboardLayout({
   }, [user, loading, router]);
 
   const handleSortChange = (newSort: SortOption) => {
-    setSortBy(newSort);
-    // Update URL with sort param
     const params = new URLSearchParams(searchParams.toString());
-    params.set("sort", newSort);
-    router.push(`${pathname}?${params.toString()}`);
+
+    // If default, remove from URL
+    if (newSort === "last-modified") {
+      params.delete("sort");
+    } else {
+      params.set("sort", newSort);
+    }
+
+    // Keep current path, just update query
+    const newUrl = params.toString() ? `?${params.toString()}` : "";
+    router.push(`${window.location.pathname}${newUrl}`, { scroll: false });
   };
 
   const handleCreateCanvas = () => {
-    // TODO: Open create canvas modal
     console.log("Create canvas clicked");
   };
 
@@ -55,19 +57,15 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen bg-zinc-950 overflow-hidden">
-      {/* Sidebar */}
       <DashboardSidebar />
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <DashboardHeader
           onCreateCanvas={handleCreateCanvas}
           sortBy={sortBy}
           onSortChange={handleSortChange}
         />
 
-        {/* Page Content - Pass sortBy to children */}
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
