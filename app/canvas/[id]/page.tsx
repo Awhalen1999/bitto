@@ -39,7 +39,7 @@ export default function CanvasEditorPage() {
             </h2>
             <p className="text-zinc-400">Canvas ID: {canvasId}</p>
             <p className="text-zinc-500 text-sm mt-4">
-              tldraw integration coming next
+              Konva.js integration coming next
             </p>
           </div>
         </div>

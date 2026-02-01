@@ -1,8 +1,7 @@
-// lib/components/canvas/AssetDrawer.tsx
 "use client";
 
 import { useState } from "react";
-import { ChevronRight, Upload, Search } from "lucide-react";
+import { PanelRightClose, PanelRightOpen, Upload, Search } from "lucide-react";
 
 interface AssetDrawerProps {
   canvasId: string;
@@ -10,37 +9,35 @@ interface AssetDrawerProps {
   onToggle: () => void;
 }
 
-export function AssetDrawer({ canvasId, isOpen, onToggle }: AssetDrawerProps) {
+export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
     <>
-      {/* Collapsed State - Thin bar on right edge */}
+      {/* Closed: whole bar is one button (Figma-style) */}
       {!isOpen && (
-        <div className="absolute top-0 right-0 h-full w-12 bg-zinc-900 border-l border-zinc-800 flex items-center justify-center">
-          <button
-            onClick={onToggle}
-            className="w-8 h-8 flex items-center justify-center rounded hover:bg-zinc-800 transition-colors"
-            title="Open asset drawer"
-          >
-            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-180" />
-          </button>
-        </div>
+        <button
+          onClick={onToggle}
+          className="absolute top-2 right-2 flex items-center gap-2 px-3 py-2 rounded-lg border border-zinc-800 bg-zinc-900 shadow-xl hover:bg-zinc-800 transition-colors text-left"
+          title="Open Assets"
+        >
+          <PanelRightOpen className="w-4 h-4 text-zinc-400 shrink-0" />
+          <span className="text-sm font-semibold text-white">Assets</span>
+        </button>
       )}
 
-      {/* Expanded State - Full drawer */}
+      {/* Open: full drawer with close button on left of header (Figma-style) */}
       {isOpen && (
-        <div className="absolute top-0 right-0 h-full w-80 bg-zinc-900 border-l border-zinc-800 flex flex-col shadow-2xl">
-          {/* Header with toggle */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800">
-            <h2 className="text-sm font-semibold text-white">Assets</h2>
+        <div className="absolute top-0 right-0 h-full w-80 flex flex-col border-l border-zinc-800 bg-zinc-900 shadow-xl">
+          <div className="flex items-center gap-2 px-2 py-3 border-b border-zinc-800">
             <button
               onClick={onToggle}
-              className="w-7 h-7 flex items-center justify-center rounded hover:bg-zinc-800 transition-colors"
-              title="Close drawer"
+              className="w-8 h-8 flex items-center justify-center rounded hover:bg-zinc-800 transition-colors shrink-0"
+              title="Minimize Assets"
             >
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
+              <PanelRightClose className="w-4 h-4 text-zinc-400" />
             </button>
+            <h2 className="text-sm font-semibold text-white">Assets</h2>
           </div>
 
           {/* Upload Button */}
