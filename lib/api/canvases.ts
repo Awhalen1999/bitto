@@ -3,38 +3,15 @@ import { SortOption } from "@/lib/components/dashboard/DashboardHeader";
 
 export type ViewType = "all" | "my-files" | "shared" | "trash";
 
-export interface CanvasObject {
-  id: string;
-  type: "asset" | "group";
-  assetId?: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  rotation?: number;
-  groupId?: string;
-  zIndex: number;
-  label?: string;
-}
-
-export interface CanvasData {
-  version: number;
-  objects: CanvasObject[];
-  viewport: {
-    x: number;
-    y: number;
-    scale: number;
-  };
-}
-
 export interface Canvas {
   id: string;
   name: string;
   owner_id: string;
-  canvas_data: CanvasData | null;
-  thumbnail_url: string | null;
-  last_edited_at: string;
+  viewport_x: number;
+  viewport_y: number;
+  viewport_scale: number;
   created_at: string;
+  updated_at: string;
   deleted_at: string | null;
 }
 
@@ -58,7 +35,12 @@ export async function createCanvas(data: { name: string }): Promise<Canvas> {
 
 export async function updateCanvas(
   canvasId: string,
-  data: { name?: string; canvas_data?: CanvasData },
+  data: {
+    name?: string;
+    viewport_x?: number;
+    viewport_y?: number;
+    viewport_scale?: number;
+  },
 ): Promise<Canvas> {
   return apiClient(`/api/canvases/${canvasId}`, {
     method: "PATCH",

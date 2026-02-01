@@ -9,7 +9,6 @@ export function useCreateCanvas() {
   return useMutation({
     mutationFn: createCanvas,
     onSuccess: () => {
-      // Invalidate all canvas queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["canvases"] });
     },
   });
