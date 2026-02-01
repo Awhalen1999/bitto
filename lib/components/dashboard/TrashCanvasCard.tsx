@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { MoreVertical, Workflow } from "lucide-react";
+import { MoreVertical } from "lucide-react";
+import { CanvasFileIcon } from "@/lib/components/shared/FileIcons";
 import { useRestoreCanvas } from "@/lib/hooks/useRestoreCanvas";
 import { usePermanentDeleteCanvas } from "@/lib/hooks/usePermanentDeleteCanvas";
 import type { Canvas } from "@/lib/api/canvases";
@@ -112,9 +113,7 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
 
         {/* Card Footer */}
         <div className="p-3 flex items-center gap-2.5">
-          <div className="shrink-0 w-7 h-7 bg-blue-500/20 border border-blue-500/30 rounded flex items-center justify-center">
-            <Workflow className="w-4 h-4 text-blue-400" />
-          </div>
+          <CanvasFileIcon />
 
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-white truncate leading-tight">
