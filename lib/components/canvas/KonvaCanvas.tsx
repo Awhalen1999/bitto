@@ -1,7 +1,15 @@
 "use client";
 
 import { useRef, useState, useCallback, useEffect, useMemo } from "react";
-import { Minus, Plus, Redo2, Undo2 } from "lucide-react";
+import {
+  Hand,
+  Lock,
+  Minus,
+  MousePointer2,
+  Plus,
+  Redo2,
+  Undo2,
+} from "lucide-react";
 import { Stage, Layer, Rect, Line, Text } from "react-konva";
 import type Konva from "konva";
 import { useCanvas } from "@/lib/hooks/useCanvas";
@@ -21,6 +29,8 @@ const GRID_STROKE = "#e5e7eb";
 const GRID_STROKE_WIDTH = 0.5;
 const CANVAS_FILL = "#ffffff";
 
+type CanvasTool = "lock" | "hand" | "pointer";
+
 interface KonvaCanvasProps {
   canvasId: string;
 }
@@ -39,6 +49,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     scale: 1,
   });
   const [isSavingViewport, setIsSavingViewport] = useState(false);
+  const [tool, setTool] = useState<CanvasTool>("hand");
+  const [isPanning, setIsPanning] = useState(false);
 
   const { data: canvas, isLoading: isCanvasLoading } = useCanvas(canvasId);
   const { data: assets = [] } = useCanvasAssets(canvasId);
@@ -146,8 +158,13 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [zoomBy]);
 
+  const handleStageDragStart = useCallback(() => {
+    setIsPanning(true);
+  }, []);
+
   const handleStageDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
+      setIsPanning(false);
       const x = e.target.x();
       const y = e.target.y();
       const scale = stageRef.current?.scaleX() ?? viewport.scale;
@@ -155,6 +172,24 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       saveViewport(x, y, scale);
     },
     [viewport.scale, saveViewport],
+  );
+
+  const handleWheel = useCallback(
+    (e: Konva.KonvaEventObject<WheelEvent>) => {
+      e.evt.preventDefault();
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const dx = e.evt.deltaX;
+      const dy = e.evt.deltaY;
+      const newX = viewport.x + dx;
+      const newY = viewport.y + dy;
+
+      stage.position({ x: newX, y: newY });
+      setViewport((prev) => ({ ...prev, x: newX, y: newY }));
+      saveViewport(newX, newY, viewport.scale);
+    },
+    [viewport, saveViewport],
   );
 
   const handleAssetDragEnd = useCallback(
@@ -202,13 +237,67 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
 
   const half = CANVAS_SIZE / 2;
 
+  const toolButtonClass =
+    "flex h-8 w-8 items-center justify-center text-zinc-600 hover:bg-zinc-200/80 transition-colors";
+  const toolButtonActiveClass = "bg-zinc-200 text-zinc-800";
+
+  const cursorClass =
+    tool === "lock"
+      ? "cursor-not-allowed"
+      : tool === "hand"
+        ? isPanning
+          ? "cursor-grabbing"
+          : "cursor-grab"
+        : "cursor-default";
+
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-zinc-200">
+    <div
+      ref={containerRef}
+      className={`w-full h-full relative bg-zinc-200 ${cursorClass}`}
+    >
+      {/* Floating tool controller (Excalidraw-style) */}
+      <div className="absolute top-3 left-3 z-10 cursor-pointer">
+        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setTool("lock")}
+            className={`rounded-l-md ${toolButtonClass} ${tool === "lock" ? toolButtonActiveClass : ""}`}
+            title="Lock (no movement)"
+            aria-label="Lock canvas"
+            aria-pressed={tool === "lock"}
+          >
+            <Lock className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("hand")}
+            className={`border-l border-zinc-300 ${toolButtonClass} ${tool === "hand" ? toolButtonActiveClass : ""}`}
+            title="Hand (pan canvas)"
+            aria-label="Hand tool"
+            aria-pressed={tool === "hand"}
+          >
+            <Hand className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("pointer")}
+            className={`rounded-r-md border-l border-zinc-300 ${toolButtonClass} ${tool === "pointer" ? toolButtonActiveClass : ""}`}
+            title="Pointer (select items)"
+            aria-label="Pointer tool"
+            aria-pressed={tool === "pointer"}
+          >
+            <MousePointer2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
       <Stage
         ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
-        draggable
+        draggable={tool === "hand"}
+        onWheel={handleWheel}
+        onDragStart={handleStageDragStart}
         onDragEnd={handleStageDragEnd}
         x={viewport.x}
         y={viewport.y}
@@ -239,13 +328,14 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
             <AssetNode
               key={asset.id}
               asset={asset}
+              tool={tool}
               onDragEnd={handleAssetDragEnd}
             />
           ))}
         </Layer>
       </Stage>
 
-      <div className="absolute bottom-3 left-3 flex items-center gap-2">
+      <div className="absolute bottom-3 left-3 flex cursor-pointer items-center gap-2">
         {/* Zoom: minus | % | plus (Excalidraw-style) */}
         <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
           <button
@@ -308,11 +398,13 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
 
 interface AssetNodeProps {
   asset: Asset;
+  tool: CanvasTool;
   onDragEnd: (assetId: string, x: number, y: number) => void;
 }
 
-function AssetNode({ asset, onDragEnd }: AssetNodeProps) {
+function AssetNode({ asset, tool, onDragEnd }: AssetNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const draggable = tool === "pointer";
 
   return (
     <>
@@ -324,7 +416,7 @@ function AssetNode({ asset, onDragEnd }: AssetNodeProps) {
         fill={isDragging ? "#6b7280" : "#4b5563"}
         stroke="#71717a"
         strokeWidth={1}
-        draggable
+        draggable={draggable}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={(e) => {
           setIsDragging(false);
