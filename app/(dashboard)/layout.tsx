@@ -45,15 +45,7 @@ export default function DashboardLayout({
     setIsCreateModalOpen(true);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
-        <div className="text-white">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
+  if (loading || !user) return null;
 
   return (
     <>
