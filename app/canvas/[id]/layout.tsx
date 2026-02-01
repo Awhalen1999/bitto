@@ -4,7 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { CanvasHeader } from "@/lib/components/canvas/CanvasHeader";
-import { AssetDrawer } from "@/lib/components/canvas/AssetDrawer";
+import { Library } from "@/lib/components/canvas/Library";
 
 export default function CanvasLayout({
   children,
@@ -33,7 +33,7 @@ export default function CanvasLayout({
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         <div className="flex-1 relative min-h-0">{children}</div>
 
-        <AssetDrawer
+        <Library
           canvasId={canvasId}
           isOpen={isDrawerOpen}
           onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
