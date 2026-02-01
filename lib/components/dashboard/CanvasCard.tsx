@@ -90,7 +90,9 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900" />
+              <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
+                <p className="text-zinc-500 text-sm">No thumbnail available</p>
+              </div>
             )}
 
             {/* Context Menu Button */}

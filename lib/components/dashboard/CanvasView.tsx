@@ -63,7 +63,7 @@ export function CanvasView({
           </p>
         </div>
       ) : (
-        <CanvasGrid canvases={canvases} />
+        <CanvasGrid canvases={canvases} isTrash={view === "trash"} />
       )}
     </div>
   );
