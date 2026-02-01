@@ -33,7 +33,7 @@ export function CanvasHeader({
           <h1 className="text-sm font-medium text-zinc-200">{canvasName}</h1>
           <span className="text-xs text-zinc-500">/</span>
           <span className="text-xs text-zinc-500">
-            ID: {canvasId.substring(0, 12)}...
+            {canvasId.substring(0, 12)}...
           </span>
           <span className="text-xs text-zinc-500">/</span>
           <span className="text-xs text-zinc-500">Edited {lastEdited}</span>
