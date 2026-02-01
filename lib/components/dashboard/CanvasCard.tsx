@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FileText, MoreVertical } from "lucide-react";
+import { MoreVertical, Workflow } from "lucide-react";
 import { useDeleteCanvas } from "@/lib/hooks/useDeleteCanvas";
 import type { Canvas } from "@/lib/api/canvases";
 
@@ -111,8 +111,8 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
 
           {/* Card Footer */}
           <div className="p-3 flex items-center gap-2.5">
-            <div className="shrink-0 w-7 h-7 bg-purple-500/20 border border-purple-500/30 rounded flex items-center justify-center">
-              <FileText className="w-4 h-4 text-purple-400" />
+            <div className="shrink-0 w-7 h-7 bg-blue-500/20 border border-blue-500/30 rounded flex items-center justify-center">
+              <Workflow className="w-4 h-4 text-blue-400" />
             </div>
 
             <div className="flex-1 min-w-0">
