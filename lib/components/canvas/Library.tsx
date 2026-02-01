@@ -28,10 +28,10 @@ export function Library({ canvasId, isOpen, onToggle }: LibraryProps) {
       {!isOpen && (
         <button
           onClick={onToggle}
-          className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-800 bg-black shadow-xl hover:bg-neutral-900 transition-colors"
+          className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-xl hover:bg-neutral-800 transition-colors"
           title="Open Library"
         >
-          <PanelRightOpen className="w-4 h-4 text-neutral-400" />
+          <PanelRightOpen className="w-4 h-4 text-white" />
         </button>
       )}
 
