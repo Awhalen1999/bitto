@@ -38,57 +38,40 @@ export function UserDropdown() {
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 w-full p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+        className="flex items-center gap-3 w-full p-2 hover:bg-neutral-800 rounded-lg transition-colors"
       >
-        {/* Avatar - initials until we support pfp uploads */}
-        <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center text-white text-sm font-medium shrink-0">
+        <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center text-white text-sm font-medium shrink-0">
           {initials}
         </div>
-
-        {/* User Info */}
         <div className="flex-1 text-left min-w-0">
           <p className="text-sm font-medium text-white truncate">
             {user?.displayName || user?.email?.split("@")[0] || "User"}
           </p>
-          <p className="text-xs text-zinc-500">Free</p>
+          <p className="text-xs text-neutral-500">Free</p>
         </div>
-
-        {/* Chevron */}
-        <ChevronDown
-          className={`w-4 h-4 text-zinc-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`}
-        />
+        <ChevronDown className={`w-4 h-4 text-neutral-400 transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden z-50">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-neutral-800 rounded-lg shadow-xl border border-neutral-700 overflow-hidden z-50">
           <button
-            onClick={() => {
-              setIsOpen(false);
-              // TODO: Navigate to settings
-            }}
-            className="w-full px-3 py-2.5 text-left text-sm text-white hover:bg-zinc-700 flex items-center gap-3"
+            onClick={() => setIsOpen(false)}
+            className="w-full px-3 py-2.5 text-left text-sm text-white hover:bg-neutral-700 flex items-center gap-3"
           >
             <Settings className="w-4 h-4" />
             Account Settings
           </button>
-
           <button
-            onClick={() => {
-              setIsOpen(false);
-              // TODO: Navigate to billing
-            }}
-            className="w-full px-3 py-2.5 text-left text-sm text-white hover:bg-zinc-700 flex items-center gap-3"
+            onClick={() => setIsOpen(false)}
+            className="w-full px-3 py-2.5 text-left text-sm text-white hover:bg-neutral-700 flex items-center gap-3"
           >
             <CreditCard className="w-4 h-4" />
             Billing
           </button>
-
-          <div className="border-t border-zinc-700"></div>
-
+          <div className="border-t border-neutral-700" />
           <button
             onClick={handleSignOut}
-            className="w-full px-3 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-700 flex items-center gap-3"
+            className="w-full px-3 py-2.5 text-left text-sm text-red-400 hover:bg-neutral-700 flex items-center gap-3"
           >
             <LogOut className="w-4 h-4" />
             Logout

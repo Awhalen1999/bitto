@@ -56,10 +56,7 @@ export function CreateCanvasModal({
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label
-            htmlFor="canvas-name"
-            className="block text-sm font-medium text-zinc-300 mb-2"
-          >
+          <label htmlFor="canvas-name" className="block text-sm font-medium text-neutral-300 mb-2">
             Canvas name
           </label>
           <input
@@ -70,7 +67,7 @@ export function CreateCanvasModal({
             onChange={(e) => setName(e.target.value)}
             disabled={isPending}
             autoFocus
-            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white placeholder:text-zinc-500 focus:outline-none focus:border-zinc-600 disabled:opacity-50"
+            className="w-full px-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white placeholder:text-neutral-500 focus:outline-none focus:border-neutral-600 disabled:opacity-50"
           />
         </div>
 
@@ -79,14 +76,14 @@ export function CreateCanvasModal({
             type="button"
             onClick={handleClose}
             disabled={isPending}
-            className="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm text-neutral-400 hover:text-white transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isPending || !name.trim()}
-            className="px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPending ? "Creating..." : "Create canvas"}
           </button>

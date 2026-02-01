@@ -18,8 +18,8 @@ export function DashboardSidebar() {
   const currentSort = searchParams.get("sort");
 
   return (
-    <div className="w-60 bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen">
-      <div className="p-4 border-b border-zinc-800">
+    <div className="w-60 bg-black border-r border-neutral-800 flex flex-col h-screen">
+      <div className="p-4 border-b border-neutral-800">
         <UserDropdown />
       </div>
 
@@ -28,7 +28,6 @@ export function DashboardSidebar() {
           const isActive = pathname === item.href;
           const Icon = item.icon;
 
-          // Preserve sort param if it exists and isn't default
           let href = item.href;
           if (currentSort && currentSort !== "last-modified") {
             href += `?sort=${currentSort}`;
@@ -40,11 +39,7 @@ export function DashboardSidebar() {
               href={href}
               className={`
                 flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-                ${
-                  isActive
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                }
+                ${isActive ? "bg-neutral-800 text-white" : "text-neutral-400 hover:bg-neutral-800 hover:text-white"}
               `}
             >
               <Icon className="w-4 h-4" />
@@ -54,12 +49,10 @@ export function DashboardSidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-zinc-800">
-        <div className="bg-zinc-800 rounded-lg p-3">
-          <p className="text-xs text-zinc-400 mb-2">
-            Upgrade for premium features
-          </p>
-          <button className="w-full bg-white text-black text-sm py-2 rounded-md hover:bg-zinc-200 transition-colors font-medium">
+      <div className="p-4 border-t border-neutral-800">
+        <div className="bg-neutral-800 rounded-lg p-3">
+          <p className="text-xs text-neutral-400 mb-2">Upgrade for premium features</p>
+          <button className="w-full bg-white text-black text-sm py-2 rounded-lg hover:bg-neutral-200 transition-colors font-medium">
             View plans
           </button>
         </div>

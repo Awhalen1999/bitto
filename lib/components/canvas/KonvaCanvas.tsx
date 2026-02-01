@@ -25,9 +25,9 @@ const ZOOM_INCREMENT = 0.1;
 
 const CANVAS_SIZE = 8000;
 const GRID_SPACING = 40;
-const GRID_STROKE = "#e5e7eb";
+const GRID_STROKE = "#404040"; /* neutral-700, visible on dark */
 const GRID_STROKE_WIDTH = 0.5;
-const CANVAS_FILL = "#ffffff";
+const CANVAS_FILL = "#171717"; /* neutral-900, matches Linear dark surface */
 
 type CanvasTool = "lock" | "hand" | "pointer";
 
@@ -221,16 +221,16 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
 
   if (isCanvasLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
-        <p className="text-sm text-zinc-400">Loading canvas...</p>
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <p className="text-sm text-neutral-400">Loading canvas...</p>
       </div>
     );
   }
 
   if (!canvas) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
-        <p className="text-sm text-zinc-500">Canvas not found</p>
+      <div className="w-full h-full flex items-center justify-center bg-black">
+        <p className="text-sm text-neutral-500">Canvas not found</p>
       </div>
     );
   }
@@ -238,8 +238,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   const half = CANVAS_SIZE / 2;
 
   const toolButtonClass =
-    "flex h-8 w-8 items-center justify-center text-zinc-600 hover:bg-zinc-200/80 transition-colors";
-  const toolButtonActiveClass = "bg-zinc-200 text-zinc-800";
+    "flex h-8 w-8 items-center justify-center text-neutral-400 hover:bg-neutral-800 transition-colors";
+  const toolButtonActiveClass = "bg-neutral-800 text-neutral-100";
 
   const cursorClass =
     tool === "lock"
@@ -253,11 +253,11 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   return (
     <div
       ref={containerRef}
-      className={`w-full h-full relative bg-zinc-200 ${cursorClass}`}
+      className={`w-full h-full relative bg-black ${cursorClass}`}
     >
       {/* Floating tool controller (Excalidraw-style) */}
       <div className="absolute top-3 left-3 z-10 cursor-pointer">
-        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+        <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
             onClick={() => setTool("lock")}
@@ -271,7 +271,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => setTool("hand")}
-            className={`border-l border-zinc-300 ${toolButtonClass} ${tool === "hand" ? toolButtonActiveClass : ""}`}
+            className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "hand" ? toolButtonActiveClass : ""}`}
             title="Hand (pan canvas)"
             aria-label="Hand tool"
             aria-pressed={tool === "hand"}
@@ -281,7 +281,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => setTool("pointer")}
-            className={`rounded-r-md border-l border-zinc-300 ${toolButtonClass} ${tool === "pointer" ? toolButtonActiveClass : ""}`}
+            className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "pointer" ? toolButtonActiveClass : ""}`}
             title="Pointer (select items)"
             aria-label="Pointer tool"
             aria-pressed={tool === "pointer"}
@@ -337,18 +337,18 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
 
       <div className="absolute bottom-3 left-3 flex cursor-pointer items-center gap-2">
         {/* Zoom: minus | % | plus (Excalidraw-style) */}
-        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+        <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
             onClick={() => zoomBy(-1)}
-            className="flex h-8 w-8 items-center justify-center rounded-l-md text-zinc-600 hover:bg-zinc-200/80"
+            className="flex h-8 w-8 items-center justify-center rounded-l-md text-neutral-400 hover:bg-neutral-800"
             title="Zoom out"
             aria-label="Zoom out"
           >
             <Minus className="h-4 w-4" />
           </button>
           <span
-            className="min-w-12 px-2 text-center text-xs font-medium text-zinc-700"
+            className="min-w-12 px-2 text-center text-xs font-medium text-neutral-300"
             aria-live="polite"
           >
             {Math.round(viewport.scale * 100)}%
@@ -356,7 +356,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => zoomBy(1)}
-            className="flex h-8 w-8 items-center justify-center rounded-r-md text-zinc-600 hover:bg-zinc-200/80"
+            className="flex h-8 w-8 items-center justify-center rounded-r-md text-neutral-400 hover:bg-neutral-800"
             title="Zoom in"
             aria-label="Zoom in"
           >
@@ -365,11 +365,11 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         </div>
 
         {/* Undo / Redo (placeholder – log only for now) */}
-        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+        <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
             onClick={() => console.log("undo")}
-            className="flex h-8 w-8 items-center justify-center rounded-l-md text-zinc-600 hover:bg-zinc-200/80"
+            className="flex h-8 w-8 items-center justify-center rounded-l-md text-neutral-400 hover:bg-neutral-800"
             title="Undo"
             aria-label="Undo"
           >
@@ -378,7 +378,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => console.log("redo")}
-            className="flex h-8 w-8 items-center justify-center rounded-r-md border-l border-zinc-300 text-zinc-600 hover:bg-zinc-200/80"
+            className="flex h-8 w-8 items-center justify-center rounded-r-md border-l border-neutral-700 text-neutral-400 hover:bg-neutral-800"
             title="Redo"
             aria-label="Redo"
           >
@@ -387,7 +387,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         </div>
 
         {isSavingViewport && (
-          <span className="rounded-lg border border-zinc-300 bg-zinc-100 px-2 py-1.5 text-xs text-zinc-500">
+          <span className="rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-xs text-neutral-500">
             Saving…
           </span>
         )}

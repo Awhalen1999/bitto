@@ -29,29 +29,29 @@ export function CanvasHeader({ canvasId }: CanvasHeaderProps) {
   };
 
   return (
-    <header className="h-10 border-b border-zinc-800 flex items-center justify-between px-4 bg-zinc-900 shrink-0 z-10">
+    <header className="h-10 border-b border-neutral-800 flex items-center justify-between px-4 bg-black shrink-0 z-10">
       <div className="flex items-center gap-4">
         <button
           onClick={() => router.push("/")}
-          className="w-6 h-6 flex items-center justify-center rounded hover:bg-zinc-800 transition-colors"
+          className="w-6 h-6 flex items-center justify-center rounded hover:bg-neutral-800 transition-colors text-neutral-400 hover:text-neutral-200"
           title="Back to dashboard"
         >
-          <ArrowLeft className="w-4 h-4 text-zinc-400" />
+          <ArrowLeft className="w-4 h-4" />
         </button>
 
         <div className="flex items-center gap-2">
           <CanvasFileIcon size="sm" />
-          <h1 className="text-sm font-medium text-zinc-200">
+          <h1 className="text-sm font-medium text-neutral-200">
             {isLoading ? "Loading..." : canvas?.name || "Untitled Canvas"}
           </h1>
-          <span className="text-xs text-zinc-500">/</span>
-          <span className="text-xs text-zinc-500">
+          <span className="text-xs text-neutral-500">/</span>
+          <span className="text-xs text-neutral-500">
             {canvasId.substring(0, 12)}...
           </span>
           {canvas?.updated_at && (
             <>
-              <span className="text-xs text-zinc-500">/</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-neutral-500">/</span>
+              <span className="text-xs text-neutral-500">
                 Edited {formatRelativeTime(canvas.updated_at)}
               </span>
             </>

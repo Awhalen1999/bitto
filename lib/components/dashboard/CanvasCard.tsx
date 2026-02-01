@@ -75,44 +75,30 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
   return (
     <div className="group relative" onContextMenu={handleContextMenu}>
       <Link href={`/canvas/${canvas.id}`}>
-        <div className="relative bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-all cursor-pointer">
-          {/* Thumbnail Area */}
-          <div className="aspect-4/3 bg-zinc-800 flex items-center justify-center relative">
-            {/* TODO: Active collaborators avatars */}
-            <div className="absolute top-2 left-2 flex -space-x-2">
-              {/* Avatar array will go here */}
+        <div className="relative bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden hover:border-neutral-700 transition-all cursor-pointer">
+          <div className="aspect-4/3 bg-neutral-800 flex items-center justify-center relative">
+            <div className="absolute top-2 left-2 flex -space-x-2" />
+            <div className="w-full h-full bg-linear-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
+              <p className="text-neutral-500 text-sm">Canvas Preview</p>
             </div>
-
-            {/* TODO: Canvas thumbnail generation */}
-            <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-              <p className="text-zinc-500 text-sm">Canvas Preview</p>
-            </div>
-
-            {/* Context Menu Button */}
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 setIsMenuOpen(!isMenuOpen);
               }}
-              className="absolute top-2 right-2 w-8 h-8 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700/50 rounded-md items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden group-hover:flex hover:bg-zinc-800"
+              className="absolute top-2 right-2 w-8 h-8 bg-neutral-900/90 backdrop-blur-sm border border-neutral-700/50 rounded-md items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden group-hover:flex hover:bg-neutral-800"
               disabled={isDeleting}
             >
-              <MoreVertical className="w-4 h-4 text-zinc-300" />
+              <MoreVertical className="w-4 h-4 text-neutral-300" />
             </button>
           </div>
 
-          {/* Card Footer */}
           <div className="p-3 flex items-center gap-3">
             <CanvasFileIcon />
-
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-white truncate leading-tight">
-                {canvas.name}
-              </h3>
-              <p className="text-xs text-zinc-500 mt-0.5">
-                Edited {formatDate(canvas.updated_at)}
-              </p>
+              <h3 className="text-sm font-medium text-white truncate leading-tight">{canvas.name}</h3>
+              <p className="text-xs text-neutral-500 mt-0.5">Edited {formatDate(canvas.updated_at)}</p>
             </div>
           </div>
         </div>
@@ -122,12 +108,12 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
       {isMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute top-12 right-2 z-50 w-48 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden"
+          className="absolute top-12 right-2 z-50 w-48 bg-neutral-800 rounded-lg shadow-xl border border-neutral-700 overflow-hidden"
         >
           <button
             onClick={() => handleMenuClick("open")}
             disabled={isDeleting}
-            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-neutral-700 transition-colors disabled:opacity-50"
           >
             Open
           </button>
@@ -137,15 +123,15 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
               setIsMenuOpen(false);
             }}
             disabled={isDeleting}
-            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-neutral-700 transition-colors disabled:opacity-50"
           >
             Open in new tab
           </button>
-          <div className="border-t border-zinc-700"></div>
+          <div className="border-t border-neutral-700" />
           <button
             onClick={() => handleMenuClick("trash")}
             disabled={isDeleting}
-            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-neutral-700 transition-colors disabled:opacity-50"
           >
             {isDeleting ? "Moving to trash..." : "Move to trash"}
           </button>

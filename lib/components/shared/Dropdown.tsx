@@ -44,7 +44,7 @@ export function Dropdown<T extends string>({
     <div className={`relative ${className}`} ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-300 hover:bg-zinc-750 transition-colors flex items-center gap-2 min-w-[160px] justify-between"
+        className="px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm text-neutral-300 hover:bg-neutral-800 transition-colors flex items-center gap-2 min-w-[160px] justify-between"
       >
         <span>
           {label && `${label}: `}
@@ -66,7 +66,7 @@ export function Dropdown<T extends string>({
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden z-10">
+        <div className="absolute right-0 mt-2 w-48 bg-neutral-800 rounded-lg shadow-xl border border-neutral-700 overflow-hidden z-10">
           {options.map((option) => (
             <button
               key={option.value}
@@ -74,14 +74,7 @@ export function Dropdown<T extends string>({
                 onChange(option.value);
                 setIsOpen(false);
               }}
-              className={`
-                w-full px-4 py-2.5 text-left text-sm transition-colors
-                ${
-                  value === option.value
-                    ? "bg-zinc-700 text-white"
-                    : "text-zinc-300 hover:bg-zinc-700"
-                }
-              `}
+              className={`w-full px-4 py-2.5 text-left text-sm transition-colors ${value === option.value ? "bg-neutral-700 text-white" : "text-neutral-300 hover:bg-neutral-700"}`}
             >
               {option.label}
             </button>

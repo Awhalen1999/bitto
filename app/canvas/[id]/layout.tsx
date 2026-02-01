@@ -27,7 +27,7 @@ export default function CanvasLayout({
   if (loading || !user) return null;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-zinc-950">
+    <div className="fixed inset-0 flex flex-col bg-black">
       <CanvasHeader canvasId={canvasId} />
 
       <div className="flex-1 flex overflow-hidden relative min-h-0">
