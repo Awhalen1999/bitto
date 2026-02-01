@@ -1,9 +1,10 @@
-// lib/components/dashboard/CanvasCard.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FileText, MoreVertical } from "lucide-react";
+import { useDeleteCanvas } from "@/lib/hooks/useDeleteCanvas";
 import type { Canvas } from "@/lib/api/canvases";
 
 interface CanvasCardProps {
@@ -13,8 +14,11 @@ interface CanvasCardProps {
 export function CanvasCard({ canvas }: CanvasCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  // Close menu when clicking outside
+  // Proper React Query mutation hook
+  const { mutate: deleteCanvas, isPending: isDeleting } = useDeleteCanvas();
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -32,8 +36,25 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
 
   const handleMenuClick = (action: string) => {
     setIsMenuOpen(false);
-    // TODO: Implement actions
-    console.log(`Action: ${action} on canvas ${canvas.id}`);
+
+    if (action === "open") {
+      router.push(`/canvas/${canvas.id}`);
+    } else if (action === "trash") {
+      handleDelete();
+    }
+  };
+
+  const handleDelete = () => {
+    deleteCanvas(canvas.id, {
+      onSuccess: () => {
+        console.log(`✅ Moved "${canvas.name}" to trash`);
+      },
+      onError: (error) => {
+        alert(
+          `Failed to delete: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      },
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -55,16 +76,13 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
     <div className="group relative" onContextMenu={handleContextMenu}>
       <Link href={`/canvas/${canvas.id}`}>
         <div className="relative bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-all cursor-pointer">
-          {/* Thumbnail Area - Figma's aspect ratio */}
+          {/* Thumbnail Area */}
           <div className="aspect-4/3 bg-zinc-800 flex items-center justify-center relative">
-            {/* TODO: Active collaborators avatars - Top left corner */}
-            {/* Will display array of user avatars when realtime collaboration is active */}
+            {/* TODO: Active collaborators avatars */}
             <div className="absolute top-2 left-2 flex -space-x-2">
               {/* Avatar array will go here */}
             </div>
 
-            {/* Placeholder thumbnail - will be replaced with actual thumbnail from R2 later */}
-            {/* todo: look into img or next/image */}
             {canvas.thumbnail_url ? (
               <img
                 src={canvas.thumbnail_url}
@@ -72,12 +90,10 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                <p className="text-zinc-500">No thumbnail available</p>
-              </div>
+              <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900" />
             )}
 
-            {/* Context Menu Button - Top Right - Shows on hover */}
+            {/* Context Menu Button */}
             <button
               onClick={(e) => {
                 e.preventDefault();
@@ -85,24 +101,23 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
                 setIsMenuOpen(!isMenuOpen);
               }}
               className="absolute top-2 right-2 w-8 h-8 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700/50 rounded-md items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden group-hover:flex hover:bg-zinc-800"
+              disabled={isDeleting}
             >
               <MoreVertical className="w-4 h-4 text-zinc-300" />
             </button>
           </div>
 
           {/* Card Footer */}
-          <div className="p-3 flex items-center gap-3">
-            {/* File Type Indicator - Left of title, vertically centered */}
-            <div className="shrink-0 w-8 h-8 bg-purple-500/25 border border-purple-500/30 rounded flex items-center justify-center">
+          <div className="p-3 flex items-center gap-2.5">
+            <div className="shrink-0 w-7 h-7 bg-purple-500/20 border border-purple-500/30 rounded flex items-center justify-center">
               <FileText className="w-4 h-4 text-purple-400" />
             </div>
 
-            {/* Title and metadata */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-md font-medium text-white truncate leading-tight">
+              <h3 className="text-sm font-medium text-white truncate leading-tight">
                 {canvas.name}
               </h3>
-              <p className="text-sm text-zinc-500 mt-0.5">
+              <p className="text-xs text-zinc-500 mt-0.5">
                 Edited {formatDate(canvas.last_edited_at)}
               </p>
             </div>
@@ -118,7 +133,8 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
         >
           <button
             onClick={() => handleMenuClick("open")}
-            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors"
+            disabled={isDeleting}
+            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
             Open
           </button>
@@ -127,16 +143,18 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
               window.open(`/canvas/${canvas.id}`, "_blank");
               setIsMenuOpen(false);
             }}
-            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors"
+            disabled={isDeleting}
+            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
             Open in new tab
           </button>
           <div className="border-t border-zinc-700"></div>
           <button
             onClick={() => handleMenuClick("trash")}
-            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-700 transition-colors"
+            disabled={isDeleting}
+            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
-            Move to trash
+            {isDeleting ? "Moving to trash..." : "Move to trash"}
           </button>
         </div>
       )}

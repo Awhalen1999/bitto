@@ -26,3 +26,9 @@ export async function createCanvas(data: { name: string }): Promise<Canvas> {
     body: JSON.stringify(data),
   });
 }
+
+export async function deleteCanvas(canvasId: string): Promise<Canvas> {
+  return apiClient(`/api/canvases/${canvasId}`, {
+    method: "DELETE",
+  });
+}

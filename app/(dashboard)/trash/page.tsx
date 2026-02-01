@@ -5,7 +5,7 @@ export default function TrashPage() {
     <CanvasView
       view="trash"
       title="Trash"
-      subtitle="Deleted canvases (kept for 30 days)"
+      subtitle="Deleted canvases"
       emptyMessage="Trash is empty."
     />
   );
