@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { Stage, Layer, Rect, Text } from "react-konva";
+import { useRef, useState, useCallback, useEffect, useMemo } from "react";
+import { Minus, Plus, Redo2, Undo2 } from "lucide-react";
+import { Stage, Layer, Rect, Line, Text } from "react-konva";
 import type Konva from "konva";
 import { useCanvas } from "@/lib/hooks/useCanvas";
 import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
@@ -12,7 +13,13 @@ import type { Asset } from "@/lib/api/assets";
 const VIEWPORT_SAVE_DEBOUNCE_MS = 1500;
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
-const SCALE_FACTOR = 1.08;
+const ZOOM_INCREMENT = 0.1;
+
+const CANVAS_SIZE = 8000;
+const GRID_SPACING = 40;
+const GRID_STROKE = "#e5e7eb";
+const GRID_STROKE_WIDTH = 0.5;
+const CANVAS_FILL = "#ffffff";
 
 interface KonvaCanvasProps {
   canvasId: string;
@@ -21,7 +28,9 @@ interface KonvaCanvasProps {
 export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
-  const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [viewport, setViewport] = useState({
@@ -88,39 +97,54 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     [updateCanvas],
   );
 
-  const handleWheel = useCallback(
-    (e: Konva.KonvaEventObject<WheelEvent>) => {
-      e.evt.preventDefault();
+  const zoomBy = useCallback(
+    (direction: 1 | -1) => {
       const stage = stageRef.current;
       if (!stage) return;
 
-      const pointer = stage.getPointerPosition();
-      if (!pointer) return;
-
-      const oldScale = stage.scaleX();
-      const direction = e.evt.deltaY > 0 ? -1 : 1;
+      const oldScale = viewport.scale;
       const newScale = Math.max(
         MIN_SCALE,
-        Math.min(MAX_SCALE, oldScale * SCALE_FACTOR ** direction),
+        Math.min(MAX_SCALE, oldScale + direction * ZOOM_INCREMENT),
       );
+      if (newScale === oldScale) return;
 
-      const mousePointTo = {
-        x: (pointer.x - stage.x()) / oldScale,
-        y: (pointer.y - stage.y()) / oldScale,
-      };
-      const newPos = {
-        x: pointer.x - mousePointTo.x * newScale,
-        y: pointer.y - mousePointTo.y * newScale,
-      };
+      const centerX = dimensions.width / 2;
+      const centerY = dimensions.height / 2;
+      const sceneX = (centerX - viewport.x) / oldScale;
+      const sceneY = (centerY - viewport.y) / oldScale;
+      const newX = centerX - sceneX * newScale;
+      const newY = centerY - sceneY * newScale;
 
       stage.scale({ x: newScale, y: newScale });
-      stage.position(newPos);
-
-      setViewport({ x: newPos.x, y: newPos.y, scale: newScale });
-      saveViewport(newPos.x, newPos.y, newScale);
+      stage.position({ x: newX, y: newY });
+      setViewport({ x: newX, y: newY, scale: newScale });
+      saveViewport(newX, newY, newScale);
     },
-    [saveViewport],
+    [viewport, dimensions, saveViewport],
   );
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === "=" || e.key === "+") {
+        e.preventDefault();
+        zoomBy(1);
+      } else if (e.key === "-") {
+        e.preventDefault();
+        zoomBy(-1);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [zoomBy]);
 
   const handleStageDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
@@ -141,6 +165,16 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   );
 
   const sortedAssets = [...assets].sort((a, b) => a.z_index - b.z_index);
+
+  const gridLines = useMemo(() => {
+    const half = CANVAS_SIZE / 2;
+    const lines: [number, number, number, number][] = [];
+    for (let i = -half; i <= half; i += GRID_SPACING) {
+      lines.push([i, -half, i, half]);
+      lines.push([-half, i, half, i]);
+    }
+    return lines;
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -166,20 +200,40 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     );
   }
 
+  const half = CANVAS_SIZE / 2;
+
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-zinc-900">
+    <div ref={containerRef} className="w-full h-full relative bg-zinc-200">
       <Stage
         ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
         draggable
-        onWheel={handleWheel}
         onDragEnd={handleStageDragEnd}
         x={viewport.x}
         y={viewport.y}
         scaleX={viewport.scale}
         scaleY={viewport.scale}
       >
+        <Layer listening={false}>
+          <Rect
+            x={-half}
+            y={-half}
+            width={CANVAS_SIZE}
+            height={CANVAS_SIZE}
+            fill={CANVAS_FILL}
+            listening={false}
+          />
+          {gridLines.map((points, i) => (
+            <Line
+              key={i}
+              points={points}
+              stroke={GRID_STROKE}
+              strokeWidth={GRID_STROKE_WIDTH}
+              listening={false}
+            />
+          ))}
+        </Layer>
         <Layer>
           {sortedAssets.map((asset) => (
             <AssetNode
@@ -191,11 +245,63 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         </Layer>
       </Stage>
 
-      {isSavingViewport && (
-        <div className="absolute bottom-3 left-3 px-2 py-1 rounded bg-zinc-800/90 text-zinc-400 text-xs">
-          Saving…
+      <div className="absolute bottom-3 left-3 flex items-center gap-2">
+        {/* Zoom: minus | % | plus (Excalidraw-style) */}
+        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+          <button
+            type="button"
+            onClick={() => zoomBy(-1)}
+            className="flex h-8 w-8 items-center justify-center rounded-l-md text-zinc-600 hover:bg-zinc-200/80"
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <span
+            className="min-w-12 px-2 text-center text-xs font-medium text-zinc-700"
+            aria-live="polite"
+          >
+            {Math.round(viewport.scale * 100)}%
+          </span>
+          <button
+            type="button"
+            onClick={() => zoomBy(1)}
+            className="flex h-8 w-8 items-center justify-center rounded-r-md text-zinc-600 hover:bg-zinc-200/80"
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
         </div>
-      )}
+
+        {/* Undo / Redo (placeholder – log only for now) */}
+        <div className="flex items-center rounded-lg border border-zinc-300 bg-zinc-100 shadow-sm">
+          <button
+            type="button"
+            onClick={() => console.log("undo")}
+            className="flex h-8 w-8 items-center justify-center rounded-l-md text-zinc-600 hover:bg-zinc-200/80"
+            title="Undo"
+            aria-label="Undo"
+          >
+            <Undo2 className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => console.log("redo")}
+            className="flex h-8 w-8 items-center justify-center rounded-r-md border-l border-zinc-300 text-zinc-600 hover:bg-zinc-200/80"
+            title="Redo"
+            aria-label="Redo"
+          >
+            <Redo2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        {isSavingViewport && (
+          <span className="rounded-lg border border-zinc-300 bg-zinc-100 px-2 py-1.5 text-xs text-zinc-500">
+            Saving…
+          </span>
+        )}
+      </div>
     </div>
   );
 }
