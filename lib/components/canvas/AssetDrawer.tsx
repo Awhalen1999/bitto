@@ -1,7 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { PanelRightClose, PanelRightOpen, Upload, Search } from "lucide-react";
+import {
+  FolderUp,
+  PanelRightClose,
+  PanelRightOpen,
+  Search,
+} from "lucide-react";
 
 interface AssetDrawerProps {
   canvasId: string;
@@ -29,7 +34,7 @@ export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
       {/* Open: full drawer with close button on left of header (Figma-style) */}
       {isOpen && (
         <div className="absolute top-0 right-0 h-full w-80 flex flex-col border-l border-zinc-800 bg-zinc-900 shadow-xl">
-          <div className="flex items-center gap-2 px-2 py-3 border-b border-zinc-800">
+          <div className="flex items-center gap-2 p-3 border-b border-zinc-800">
             <button
               onClick={onToggle}
               className="w-8 h-8 flex items-center justify-center rounded hover:bg-zinc-800 transition-colors shrink-0"
@@ -37,20 +42,12 @@ export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
             >
               <PanelRightClose className="w-4 h-4 text-zinc-400" />
             </button>
-            <h2 className="text-sm font-semibold text-white">Assets</h2>
+            <h2 className="text-sm font-semibold text-zinc-200">Assets</h2>
           </div>
 
-          {/* Upload Button */}
-          <div className="p-4 border-b border-zinc-800">
-            <button className="w-full px-4 py-2.5 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition-colors text-sm flex items-center justify-center gap-2">
-              <Upload className="w-4 h-4" />
-              Upload Asset
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="px-4 py-3 border-b border-zinc-800">
-            <div className="relative">
+          {/* Search + Upload on one line */}
+          <div className="p-3 border-b border-zinc-800 flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
               <input
                 type="text"
@@ -60,6 +57,12 @@ export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
                 className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-white text-sm focus:outline-none focus:border-zinc-600 placeholder:text-zinc-500"
               />
             </div>
+            <button
+              className="w-9 h-9 shrink-0 flex items-center justify-center rounded-lg bg-zinc-200 text-zinc-900 hover:bg-zinc-300 transition-colors"
+              title="Upload Asset"
+            >
+              <FolderUp className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Asset List */}
@@ -67,7 +70,7 @@ export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
             {/* Empty State */}
             <div className="flex flex-col items-center justify-center h-full text-center py-12">
               <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
-                <Upload className="w-8 h-8 text-zinc-600" />
+                <FolderUp className="w-8 h-8 text-zinc-600" />
               </div>
               <p className="text-zinc-400 text-sm mb-2">No assets yet</p>
               <p className="text-zinc-500 text-xs">
