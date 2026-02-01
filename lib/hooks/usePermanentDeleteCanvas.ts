@@ -1,13 +1,7 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
-
-async function permanentDeleteCanvas(canvasId: string) {
-  return apiClient(`/api/canvases/${canvasId}/permanent`, {
-    method: "DELETE",
-  });
-}
+import { permanentDeleteCanvas } from "@/lib/api/canvases";
 
 export function usePermanentDeleteCanvas() {
   const queryClient = useQueryClient();

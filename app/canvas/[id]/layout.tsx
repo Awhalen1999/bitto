@@ -1,4 +1,3 @@
-// app/canvas/[id]/layout.tsx
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
@@ -37,15 +36,11 @@ export default function CanvasLayout({
 
   return (
     <div className="fixed inset-0 flex flex-col bg-zinc-950">
-      {/* Header */}
       <CanvasHeader canvasId={canvasId} />
 
-      {/* Main Content - FIXED positioning */}
       <div className="flex-1 flex overflow-hidden relative min-h-0">
-        {/* Canvas Area - FIXED */}
         <div className="flex-1 relative min-h-0">{children}</div>
 
-        {/* Asset Drawer */}
         <AssetDrawer
           canvasId={canvasId}
           isOpen={isDrawerOpen}
