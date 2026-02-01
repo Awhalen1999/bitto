@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { FileText } from "lucide-react";
+import { FileText, MoreVertical } from "lucide-react";
 import { useRestoreCanvas } from "@/lib/hooks/useRestoreCanvas";
 import { usePermanentDeleteCanvas } from "@/lib/hooks/usePermanentDeleteCanvas";
 import type { Canvas } from "@/lib/api/canvases";
@@ -30,9 +30,9 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Open menu on click (not navigate)
-  const handleClick = (e: React.MouseEvent) => {
+  const openMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsMenuOpen(true);
   };
 
@@ -77,9 +77,9 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
   };
 
   return (
-    <div className="group relative">
+    <div className="group relative" onContextMenu={openMenu}>
       <div
-        onClick={handleClick}
+        onClick={openMenu}
         className="relative bg-zinc-900 border border-zinc-800 rounded-lg overflow-hidden hover:border-zinc-700 transition-all cursor-pointer"
       >
         {/* Thumbnail Area - Dimmed for trash */}
@@ -95,6 +95,19 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
               <p className="text-zinc-400 text-sm">No thumbnail available</p>
             </div>
           )}
+
+          {/* Menu Button - Top Right (same as CanvasCard) */}
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+            }}
+            className="absolute top-2 right-2 w-8 h-8 bg-zinc-900/90 backdrop-blur-sm border border-zinc-700/50 rounded-md items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hidden group-hover:flex hover:bg-zinc-800"
+            disabled={isPending}
+          >
+            <MoreVertical className="w-4 h-4 text-zinc-300" />
+          </button>
         </div>
 
         {/* Card Footer */}
@@ -114,16 +127,16 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
         </div>
       </div>
 
-      {/* Context Menu */}
+      {/* Menu - same styling as CanvasCard, anchored below ... button */}
       {isMenuOpen && (
         <div
           ref={menuRef}
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-56 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden"
+          className="absolute top-12 right-2 z-50 w-48 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 overflow-hidden"
         >
           <button
             onClick={handleRestore}
             disabled={isPending}
-            className="w-full px-4 py-3 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-sm text-white hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
             {isRestoring ? "Restoring..." : "Restore"}
           </button>
@@ -131,7 +144,7 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
           <button
             onClick={handlePermanentDelete}
             disabled={isPending}
-            className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-zinc-700 transition-colors disabled:opacity-50"
+            className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-zinc-700 transition-colors disabled:opacity-50"
           >
             {isDeleting ? "Deleting permanently..." : "Permanently delete"}
           </button>
