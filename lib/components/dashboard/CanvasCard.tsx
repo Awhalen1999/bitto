@@ -17,7 +17,6 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Proper React Query mutation hook
   const { mutate: deleteCanvas, isPending: isDeleting } = useDeleteCanvas();
 
   useEffect(() => {
@@ -84,17 +83,10 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
               {/* Avatar array will go here */}
             </div>
 
-            {canvas.thumbnail_url ? (
-              <img
-                src={canvas.thumbnail_url}
-                alt={canvas.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-                <p className="text-zinc-500 text-sm">No thumbnail available</p>
-              </div>
-            )}
+            {/* TODO: Canvas thumbnail generation */}
+            <div className="w-full h-full bg-linear-to-br from-zinc-700 to-zinc-900 flex items-center justify-center">
+              <p className="text-zinc-500 text-sm">Canvas Preview</p>
+            </div>
 
             {/* Context Menu Button */}
             <button
@@ -119,7 +111,7 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
                 {canvas.name}
               </h3>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Edited {formatDate(canvas.last_edited_at)}
+                Edited {formatDate(canvas.updated_at)}
               </p>
             </div>
           </div>

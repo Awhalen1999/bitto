@@ -53,6 +53,13 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
 
   const handlePermanentDelete = () => {
     setIsMenuOpen(false);
+
+    if (
+      !confirm(`Permanently delete "${canvas.name}"? This cannot be undone.`)
+    ) {
+      return;
+    }
+
     permanentDelete(canvas.id, {
       onSuccess: () => {
         console.log(`✅ Permanently deleted "${canvas.name}"`);
@@ -85,19 +92,11 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
       >
         {/* Thumbnail Area - Dimmed for trash */}
         <div className="aspect-4/3 bg-zinc-800 flex items-center justify-center relative opacity-60">
-          {canvas.thumbnail_url ? (
-            <img
-              src={canvas.thumbnail_url}
-              alt={canvas.name}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
-              <p className="text-zinc-400 text-sm">No thumbnail available</p>
-            </div>
-          )}
+          <div className="w-full h-full bg-linear-to-br from-zinc-700 to-zinc-900 flex items-center justify-center">
+            <p className="text-zinc-400 text-sm">Deleted Canvas</p>
+          </div>
 
-          {/* Menu Button - Top Right (same as CanvasCard) */}
+          {/* Menu Button */}
           <button
             onClick={(e) => {
               e.preventDefault();
@@ -126,7 +125,7 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
         </div>
       </div>
 
-      {/* Menu - same styling as CanvasCard, anchored below ... button */}
+      {/* Menu */}
       {isMenuOpen && (
         <div
           ref={menuRef}
