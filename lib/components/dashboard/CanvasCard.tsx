@@ -84,7 +84,7 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
             </div>
 
             {/* TODO: Canvas thumbnail generation */}
-            <div className="w-full h-full bg-linear-to-br from-zinc-700 to-zinc-900 flex items-center justify-center">
+            <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
               <p className="text-zinc-500 text-sm">Canvas Preview</p>
             </div>
 

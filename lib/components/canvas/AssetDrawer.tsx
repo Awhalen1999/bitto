@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   FolderUp,
   PanelRightClose,
   PanelRightOpen,
   Search,
 } from "lucide-react";
+import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
+
+const STORAGE_LIMIT = 50;
 
 interface AssetDrawerProps {
   canvasId: string;
@@ -14,8 +17,15 @@ interface AssetDrawerProps {
   onToggle: () => void;
 }
 
-export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
+export function AssetDrawer({ canvasId, isOpen, onToggle }: AssetDrawerProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { data: assets = [], isLoading } = useCanvasAssets(canvasId);
+
+  const filteredAssets = useMemo(() => {
+    if (!searchQuery.trim()) return assets;
+    const q = searchQuery.trim().toLowerCase();
+    return assets.filter((a) => a.name.toLowerCase().includes(q));
+  }, [assets, searchQuery]);
 
   return (
     <>
@@ -66,27 +76,55 @@ export function AssetDrawer({ isOpen, onToggle }: AssetDrawerProps) {
           </div>
 
           {/* Asset List */}
-          <div className="flex-1 overflow-y-auto p-4">
-            {/* Empty State */}
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
-                <FolderUp className="w-8 h-8 text-zinc-600" />
-              </div>
-              <p className="text-zinc-400 text-sm mb-2">No assets yet</p>
-              <p className="text-zinc-500 text-xs">
-                Upload images, audio, or data files
+          <div className="flex-1 overflow-y-auto p-4 min-h-0">
+            {isLoading ? (
+              <p className="text-zinc-500 text-sm text-center py-8">
+                Loading assets…
               </p>
-            </div>
+            ) : filteredAssets.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4">
+                  <FolderUp className="w-8 h-8 text-zinc-600" />
+                </div>
+                <p className="text-zinc-400 text-sm mb-2">
+                  {assets.length === 0
+                    ? "No assets yet"
+                    : "No assets match your search"}
+                </p>
+                <p className="text-zinc-500 text-xs">
+                  Upload images, audio, or data files
+                </p>
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {filteredAssets.map((asset) => (
+                  <li
+                    key={asset.id}
+                    className="px-3 py-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-800 text-zinc-200 text-sm truncate"
+                    title={asset.name}
+                  >
+                    {asset.name}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Footer - Storage indicator */}
-          <div className="px-4 py-3 border-t border-zinc-800">
-            <div className="flex items-center justify-between text-xs text-zinc-500 mb-2">
+          <div className="px-4 py-3 border-t border-zinc-800 shrink-0">
+            <div className="flex items-center justify-between text-xs text-zinc-500">
               <span>Storage</span>
-              <span>0 / 50 assets</span>
+              <span>
+                {assets.length} / {STORAGE_LIMIT} assets
+              </span>
             </div>
-            <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-              <div className="h-full bg-purple-500" style={{ width: "0%" }} />
+            <div className="mt-2 h-1 bg-zinc-800 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-purple-500 transition-all"
+                style={{
+                  width: `${Math.min(100, (assets.length / STORAGE_LIMIT) * 100)}%`,
+                }}
+              />
             </div>
           </div>
         </div>

@@ -1,12 +1,18 @@
 "use client";
 
-import { useRef, useState, useCallback, useMemo } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Stage, Layer, Rect, Text } from "react-konva";
 import type Konva from "konva";
 import { useCanvas } from "@/lib/hooks/useCanvas";
+import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
 import { useUpdateCanvas } from "@/lib/hooks/useUpdateCanvas";
-import type { CanvasData, CanvasObject } from "@/lib/api/canvases";
-import React from "react";
+import { useUpdateAsset } from "@/lib/hooks/useUpdateAsset";
+import type { Asset } from "@/lib/api/assets";
+
+const VIEWPORT_SAVE_DEBOUNCE_MS = 1500;
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 5;
+const SCALE_FACTOR = 1.08;
 
 interface KonvaCanvasProps {
   canvasId: string;
@@ -15,176 +21,93 @@ interface KonvaCanvasProps {
 export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastSaveTimeRef = useRef<number>(0);
+  const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Container dimensions
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-  const [isSaving, setIsSaving] = useState(false);
+  const [viewport, setViewport] = useState({
+    x: 0,
+    y: 0,
+    scale: 1,
+  });
+  const [isSavingViewport, setIsSavingViewport] = useState(false);
 
-  // Fetch canvas from backend
-  const { data: canvas, isLoading } = useCanvas(canvasId);
+  const { data: canvas, isLoading: isCanvasLoading } = useCanvas(canvasId);
+  const { data: assets = [] } = useCanvasAssets(canvasId);
   const { mutate: updateCanvas } = useUpdateCanvas(canvasId);
+  const { mutate: updateAsset } = useUpdateAsset(canvasId);
+  const hasSyncedViewportRef = useRef(false);
 
-  // Canvas data is always valid from backend now
-  const serverCanvasData = useMemo(() => {
-    if (!canvas?.canvas_data) {
-      console.log("⚠️ [KONVA] No canvas data from server (should not happen)");
-      return {
-        version: 1,
-        objects: [],
-        viewport: { x: 0, y: 0, scale: 1 },
-      };
-    }
+  // Sync viewport from server once when canvas first loads (deferred to avoid sync setState in effect)
+  useEffect(() => {
+    if (!canvas || hasSyncedViewportRef.current) return;
+    hasSyncedViewportRef.current = true;
+    const v = {
+      x: canvas.viewport_x,
+      y: canvas.viewport_y,
+      scale: canvas.viewport_scale,
+    };
+    queueMicrotask(() => setViewport(v));
+  }, [canvas]);
 
-    console.log("📦 [KONVA] Loaded canvas data from server", {
-      objectCount: canvas.canvas_data.objects.length,
-      viewport: canvas.canvas_data.viewport,
-    });
+  // Resize observer
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    return canvas.canvas_data;
-  }, [canvas?.canvas_data]);
+    const measure = () => {
+      const w = el.offsetWidth || 800;
+      const h = el.offsetHeight || 600;
+      setDimensions({ width: w, height: h });
+    };
 
-  // Local state for optimistic updates
-  const [localCanvasData, setLocalCanvasData] = useState<CanvasData | null>(
-    null,
-  );
-
-  // Current canvas data (local overrides server)
-  const currentCanvasData = localCanvasData ?? serverCanvasData;
-
-  // Measure container
-  const measureContainer = useCallback(() => {
-    if (containerRef.current) {
-      const { offsetWidth, offsetHeight } = containerRef.current;
-      setDimensions({ width: offsetWidth, height: offsetHeight });
-      console.log("📐 [KONVA] Container measured", {
-        width: offsetWidth,
-        height: offsetHeight,
-      });
-    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
-  // Handle resize with ResizeObserver
-  const observeResize = useCallback(() => {
-    if (!containerRef.current) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      measureContainer();
-    });
-
-    resizeObserver.observe(containerRef.current);
-    measureContainer();
-
-    return () => resizeObserver.disconnect();
-  }, [measureContainer]);
-
-  // Setup resize observer
-  React.useEffect(() => {
-    return observeResize();
-  }, [observeResize]);
-
-  // Auto-save with debounce
-  const debouncedSave = useCallback(
-    (data: CanvasData) => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-        console.log("⏱️ [KONVA] Save debounced - resetting 8s timer");
+  const saveViewport = useCallback(
+    (x: number, y: number, scale: number) => {
+      if (viewportSaveTimeoutRef.current) {
+        clearTimeout(viewportSaveTimeoutRef.current);
       }
 
-      saveTimeoutRef.current = setTimeout(() => {
-        const now = Date.now();
-        const timeSinceLastSave = now - lastSaveTimeRef.current;
-
-        console.log("💾 [KONVA] Initiating auto-save", {
-          canvasId,
-          objectCount: data.objects.length,
-          viewport: data.viewport,
-          timeSinceLastSave: `${(timeSinceLastSave / 1000).toFixed(1)}s`,
-        });
-
-        setIsSaving(true);
-        const saveStartTime = performance.now();
-
+      viewportSaveTimeoutRef.current = setTimeout(() => {
+        setIsSavingViewport(true);
         updateCanvas(
-          { canvas_data: data },
+          { viewport_x: x, viewport_y: y, viewport_scale: scale },
           {
-            onSuccess: () => {
-              const duration = performance.now() - saveStartTime;
-              lastSaveTimeRef.current = now;
-              setIsSaving(false);
-              setLocalCanvasData(null);
-              console.log("✅ [KONVA] Auto-save successful", {
-                duration: `${duration.toFixed(2)}ms`,
-              });
-            },
-            onError: (error) => {
-              const duration = performance.now() - saveStartTime;
-              setIsSaving(false);
-              console.error("❌ [KONVA] Auto-save failed", {
-                duration: `${duration.toFixed(2)}ms`,
-                error: error instanceof Error ? error.message : "Unknown error",
-              });
+            onSettled: () => {
+              setIsSavingViewport(false);
+              viewportSaveTimeoutRef.current = null;
             },
           },
         );
-      }, 8000);
+      }, VIEWPORT_SAVE_DEBOUNCE_MS);
     },
-    [updateCanvas, canvasId],
+    [updateCanvas],
   );
 
-  // Update canvas data
-  const updateCanvasData = useCallback(
-    (updater: (prev: CanvasData) => CanvasData) => {
-      const newData = updater(currentCanvasData);
-      setLocalCanvasData(newData);
-      debouncedSave(newData);
-    },
-    [currentCanvasData, debouncedSave],
-  );
-
-  // Handle object drag
-  const handleObjectDragEnd = useCallback(
-    (objectId: string, x: number, y: number) => {
-      console.log("🎯 [KONVA] Object moved", {
-        objectId,
-        position: { x, y },
-      });
-
-      updateCanvasData((prev) => ({
-        ...prev,
-        objects: prev.objects.map((obj) =>
-          obj.id === objectId ? { ...obj, x, y } : obj,
-        ),
-      }));
-    },
-    [updateCanvasData],
-  );
-
-  // Handle viewport zoom
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {
       e.evt.preventDefault();
-
       const stage = stageRef.current;
       if (!stage) return;
 
-      const oldScale = stage.scaleX();
       const pointer = stage.getPointerPosition();
       if (!pointer) return;
 
-      const scaleBy = 1.05;
+      const oldScale = stage.scaleX();
       const direction = e.evt.deltaY > 0 ? -1 : 1;
       const newScale = Math.max(
-        0.1,
-        Math.min(5, oldScale * scaleBy ** direction),
+        MIN_SCALE,
+        Math.min(MAX_SCALE, oldScale * SCALE_FACTOR ** direction),
       );
 
       const mousePointTo = {
         x: (pointer.x - stage.x()) / oldScale,
         y: (pointer.y - stage.y()) / oldScale,
       };
-
       const newPos = {
         x: pointer.x - mousePointTo.x * newScale,
         y: pointer.y - mousePointTo.y * newScale,
@@ -193,107 +116,58 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       stage.scale({ x: newScale, y: newScale });
       stage.position(newPos);
 
-      console.log("🔍 [KONVA] Zoom", {
-        oldScale: oldScale.toFixed(2),
-        newScale: newScale.toFixed(2),
-      });
-
-      updateCanvasData((prev) => ({
-        ...prev,
-        viewport: { x: newPos.x, y: newPos.y, scale: newScale },
-      }));
+      setViewport({ x: newPos.x, y: newPos.y, scale: newScale });
+      saveViewport(newPos.x, newPos.y, newScale);
     },
-    [updateCanvasData],
+    [saveViewport],
   );
 
-  // Handle viewport pan
   const handleStageDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
       const x = e.target.x();
       const y = e.target.y();
-
-      console.log("👆 [KONVA] Canvas panned", { x, y });
-
-      updateCanvasData((prev) => ({
-        ...prev,
-        viewport: { ...prev.viewport, x, y },
-      }));
+      const scale = stageRef.current?.scaleX() ?? viewport.scale;
+      setViewport((prev) => ({ ...prev, x, y }));
+      saveViewport(x, y, scale);
     },
-    [updateCanvasData],
+    [viewport.scale, saveViewport],
   );
 
-  // Add test object
-  const addPlaceholder = useCallback(() => {
-    const objectCount = currentCanvasData.objects.length;
+  const handleAssetDragEnd = useCallback(
+    (assetId: string, x: number, y: number) => {
+      updateAsset({ assetId, data: { x, y } });
+    },
+    [updateAsset],
+  );
 
-    const newObject: CanvasObject = {
-      id: `obj-${Date.now()}`,
-      type: "asset",
-      x: 100 + objectCount * 20,
-      y: 100 + objectCount * 20,
-      width: 120,
-      height: 80,
-      zIndex: objectCount,
-      label: `Asset ${objectCount + 1}`,
-    };
+  const sortedAssets = [...assets].sort((a, b) => a.z_index - b.z_index);
 
-    console.log("➕ [KONVA] Adding object", {
-      id: newObject.id,
-      totalObjects: objectCount + 1,
-    });
-
-    updateCanvasData((prev) => ({
-      ...prev,
-      objects: [...prev.objects, newObject],
-    }));
-  }, [currentCanvasData, updateCanvasData]);
-
-  // Cleanup on unmount
-  React.useEffect(() => {
-    console.log("🚀 [KONVA] Canvas mounted", { canvasId });
-
+  useEffect(() => {
     return () => {
-      console.log("🔥 [KONVA] Canvas unmounting", { canvasId });
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      if (viewportSaveTimeoutRef.current) {
+        clearTimeout(viewportSaveTimeoutRef.current);
       }
     };
-  }, [canvasId]);
+  }, []);
 
-  if (isLoading) {
+  if (isCanvasLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-zinc-900">
-        <p className="text-zinc-400">Loading canvas...</p>
+      <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+        <p className="text-sm text-zinc-400">Loading canvas...</p>
+      </div>
+    );
+  }
+
+  if (!canvas) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-zinc-900/50">
+        <p className="text-sm text-zinc-500">Canvas not found</p>
       </div>
     );
   }
 
   return (
     <div ref={containerRef} className="w-full h-full relative bg-zinc-900">
-      {/* Controls */}
-      <div className="absolute top-4 left-4 z-10 flex gap-2">
-        <button
-          onClick={addPlaceholder}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium shadow-lg"
-        >
-          Add Placeholder
-        </button>
-        <div className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 text-sm flex items-center gap-3 shadow-lg">
-          <span>Objects: {currentCanvasData.objects.length}</span>
-          <span className="text-zinc-600">|</span>
-          <span>
-            Zoom: {Math.round(currentCanvasData.viewport.scale * 100)}%
-          </span>
-          {isSaving && (
-            <>
-              <span className="text-zinc-600">|</span>
-              <span className="text-purple-400 animate-pulse">Saving...</span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Canvas */}
       <Stage
         ref={stageRef}
         width={dimensions.width}
@@ -301,60 +175,62 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         draggable
         onWheel={handleWheel}
         onDragEnd={handleStageDragEnd}
-        x={currentCanvasData.viewport.x}
-        y={currentCanvasData.viewport.y}
-        scaleX={currentCanvasData.viewport.scale}
-        scaleY={currentCanvasData.viewport.scale}
+        x={viewport.x}
+        y={viewport.y}
+        scaleX={viewport.scale}
+        scaleY={viewport.scale}
       >
         <Layer>
-          {currentCanvasData.objects.map((obj) => (
-            <CanvasObjectNode
-              key={obj.id}
-              object={obj}
-              onDragEnd={handleObjectDragEnd}
+          {sortedAssets.map((asset) => (
+            <AssetNode
+              key={asset.id}
+              asset={asset}
+              onDragEnd={handleAssetDragEnd}
             />
           ))}
         </Layer>
       </Stage>
+
+      {isSavingViewport && (
+        <div className="absolute bottom-3 left-3 px-2 py-1 rounded bg-zinc-800/90 text-zinc-400 text-xs">
+          Saving…
+        </div>
+      )}
     </div>
   );
 }
 
-// Canvas object component
-interface CanvasObjectNodeProps {
-  object: CanvasObject;
-  onDragEnd: (objectId: string, x: number, y: number) => void;
+interface AssetNodeProps {
+  asset: Asset;
+  onDragEnd: (assetId: string, x: number, y: number) => void;
 }
 
-function CanvasObjectNode({ object, onDragEnd }: CanvasObjectNodeProps) {
+function AssetNode({ asset, onDragEnd }: AssetNodeProps) {
   const [isDragging, setIsDragging] = useState(false);
 
   return (
     <>
       <Rect
-        x={object.x}
-        y={object.y}
-        width={object.width}
-        height={object.height}
-        fill={isDragging ? "#9333ea" : "#6b7280"}
-        stroke="#e5e7eb"
-        strokeWidth={2}
+        x={asset.x}
+        y={asset.y}
+        width={asset.width}
+        height={asset.height}
+        fill={isDragging ? "#6b7280" : "#4b5563"}
+        stroke="#71717a"
+        strokeWidth={1}
         draggable
         onDragStart={() => setIsDragging(true)}
         onDragEnd={(e) => {
           setIsDragging(false);
-          onDragEnd(object.id, e.target.x(), e.target.y());
+          onDragEnd(asset.id, e.target.x(), e.target.y());
         }}
-        shadowColor="black"
-        shadowBlur={isDragging ? 10 : 0}
-        shadowOpacity={0.6}
       />
       <Text
-        x={object.x}
-        y={object.y + object.height / 2 - 10}
-        width={object.width}
-        text={object.label || "Asset"}
-        fontSize={14}
+        x={asset.x}
+        y={asset.y + asset.height / 2 - 8}
+        width={asset.width}
+        text={asset.name}
+        fontSize={12}
         fontFamily="Inter, sans-serif"
         fill="white"
         align="center"

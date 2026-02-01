@@ -48,11 +48,11 @@ export function CanvasHeader({ canvasId }: CanvasHeaderProps) {
           <span className="text-xs text-zinc-500">
             {canvasId.substring(0, 12)}...
           </span>
-          {canvas?.last_edited_at && (
+          {canvas?.updated_at && (
             <>
               <span className="text-xs text-zinc-500">/</span>
               <span className="text-xs text-zinc-500">
-                Edited {formatRelativeTime(canvas.last_edited_at)}
+                Edited {formatRelativeTime(canvas.updated_at)}
               </span>
             </>
           )}

@@ -92,7 +92,7 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
       >
         {/* Thumbnail Area - Dimmed for trash */}
         <div className="aspect-4/3 bg-zinc-800 flex items-center justify-center relative opacity-60">
-          <div className="w-full h-full bg-linear-to-br from-zinc-700 to-zinc-900 flex items-center justify-center">
+          <div className="w-full h-full bg-linear-to-br from-zinc-800 to-zinc-900 flex items-center justify-center">
             <p className="text-zinc-400 text-sm">Deleted Canvas</p>
           </div>
 
