@@ -6,4 +6,8 @@ export const queryKeys = {
   // Asset queries
   fileAssets: (fileId: string) => ["assets", "file", fileId] as const,
   asset: (id: string) => ["asset", id] as const,
+
+  // Element queries
+  fileElements: (fileId: string) => ["elements", "file", fileId] as const,
+  element: (id: string) => ["element", id] as const,
 } as const;

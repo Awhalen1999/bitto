@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FolderUp, PanelRightOpen, Search, X } from "lucide-react";
 import { useFileAssets } from "@/lib/hooks/useFileAssets";
+import { useAssetPlacement } from "@/lib/contexts/AssetPlacementContext";
 
 const STORAGE_LIMIT = 50;
 
@@ -15,6 +16,7 @@ interface LibraryProps {
 export function Library({ fileId, isOpen, onToggle }: LibraryProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: assets = [], isLoading } = useFileAssets(fileId);
+  const { selectedAssetId, setSelectedAssetId } = useAssetPlacement();
 
   const filteredAssets = useMemo(() => {
     if (!searchQuery.trim()) return assets;
@@ -93,7 +95,12 @@ export function Library({ fileId, isOpen, onToggle }: LibraryProps) {
                 {filteredAssets.map((asset) => (
                   <li
                     key={asset.id}
-                    className="px-3 py-2 rounded-lg bg-neutral-800/50 hover:bg-neutral-800 text-neutral-200 text-sm truncate"
+                    onClick={() => setSelectedAssetId(asset.id)}
+                    className={`px-3 py-2 rounded-lg cursor-pointer text-sm truncate transition-colors ${
+                      selectedAssetId === asset.id
+                        ? "bg-accent/20 border border-accent/50 text-white"
+                        : "bg-neutral-800/50 hover:bg-neutral-800 text-neutral-200"
+                    }`}
                     title={asset.name}
                   >
                     {asset.name}

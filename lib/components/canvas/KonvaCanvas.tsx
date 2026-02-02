@@ -23,9 +23,19 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
-import { Stage, Layer, Rect, Line } from "react-konva";
+import { Stage, Layer, Rect, Line, Group, Text } from "react-konva";
 import type Konva from "konva";
 import { useFile } from "@/lib/hooks/useFile";
+import { useCanvasElements } from "@/lib/hooks/useCanvasElements";
+import { useFileAssets } from "@/lib/hooks/useFileAssets";
+import { useAssetPlacement } from "@/lib/contexts/AssetPlacementContext";
+import type {
+  Element,
+  RectangleProps,
+  LineProps,
+  TextProps,
+  AssetProps,
+} from "@/lib/api/elements";
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
@@ -37,6 +47,10 @@ const GRID_SPACING = 40;
 const GRID_STROKE = "#404040";
 const GRID_STROKE_WIDTH = 0.5;
 const CANVAS_FILL = "#171717";
+
+const DEFAULT_RECT_SIZE = { width: 120, height: 80 };
+const DEFAULT_ASSET_SIZE = { width: 120, height: 80 };
+const LOG_PREFIX = "[Canvas]";
 
 type CanvasTool =
   | "lock"
@@ -90,6 +104,35 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
   const [isPanning, setIsPanning] = useState(false);
 
   const { data: file, isLoading: isFileLoading } = useFile(fileId);
+  const {
+    elements,
+    isLoading: isElementsLoading,
+    isSaving,
+    lastSavedAt,
+    createElement: createElementLocal,
+    updateElement: updateElementLocal,
+  } = useCanvasElements(fileId);
+  const { data: assets = [] } = useFileAssets(fileId);
+  const { selectedAssetId, setSelectedAssetId } = useAssetPlacement();
+
+  const [lineStartPoint, setLineStartPoint] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [lineEndPoint, setLineEndPoint] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const assetMap = useMemo(
+    () => new Map(assets.map((a) => [a.id, a])),
+    [assets],
+  );
+
+  const sortedElements = useMemo(
+    () => [...elements].sort((a, b) => a.sort_index - b.sort_index),
+    [elements],
+  );
 
   const measureRef = useRef(() => {
     const el = containerRef.current;
@@ -141,6 +184,17 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
       setViewport({ x: newX, y: newY, scale: newScale });
     },
     [viewport, dimensions],
+  );
+
+  const setToolWithReset = useCallback(
+    (newTool: CanvasTool) => {
+      setTool(newTool);
+      if (newTool !== "line") {
+        setLineStartPoint(null);
+        setLineEndPoint(null);
+      }
+    },
+    [],
   );
 
   useEffect(() => {
@@ -238,6 +292,131 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
     setViewport((prev) => ({ ...prev, x, y }));
   }, [viewport.scale, dimensions]);
 
+  const getScenePosition = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      const stage = e.target.getStage();
+      if (!stage) return null;
+      const pos = stage.getPointerPosition();
+      if (!pos) return null;
+      const scale = stage.scaleX();
+      const stagePos = stage.position();
+      return {
+        x: (pos.x - stagePos.x) / scale,
+        y: (pos.y - stagePos.y) / scale,
+      };
+    },
+    [],
+  );
+
+  const handleStageClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (tool === "hand" || tool === "lock" || tool === "comment") return;
+      let node: Konva.Node | null = e.target;
+      while (node) {
+        if (node.getAttr?.("name") === "element") return;
+        node = node.getParent();
+      }
+      const pos = getScenePosition(e);
+      if (!pos) return;
+
+      const inBounds =
+        pos.x >= -CANVAS_HALF &&
+        pos.x <= CANVAS_HALF &&
+        pos.y >= -CANVAS_HALF &&
+        pos.y <= CANVAS_HALF;
+      if (!inBounds) return;
+
+      const nextSortIndex =
+        elements.length > 0
+          ? Math.max(...elements.map((el) => el.sort_index)) + 1
+          : 0;
+
+      if (tool === "rectangle") {
+        console.log(`${LOG_PREFIX} Stage click: create rectangle at (${pos.x.toFixed(0)}, ${pos.y.toFixed(0)})`);
+        createElementLocal({
+          type: "rectangle",
+          sort_index: nextSortIndex,
+          props: {
+            x: pos.x,
+            y: pos.y,
+            width: DEFAULT_RECT_SIZE.width,
+            height: DEFAULT_RECT_SIZE.height,
+            fill: "#404040",
+            stroke: "#52525b",
+            strokeWidth: 1,
+          },
+        });
+      } else if (tool === "text") {
+        createElementLocal({
+          type: "text",
+          sort_index: nextSortIndex,
+          props: {
+            x: pos.x,
+            y: pos.y,
+            text: "Text",
+            fontSize: 14,
+            fill: "#ffffff",
+          },
+        });
+      } else if (tool === "asset" && selectedAssetId) {
+        console.log(`${LOG_PREFIX} Stage click: place asset ${selectedAssetId} at (${pos.x.toFixed(0)}, ${pos.y.toFixed(0)})`);
+        createElementLocal({
+          type: "asset",
+          sort_index: nextSortIndex,
+          props: {
+            asset_id: selectedAssetId,
+            x: pos.x,
+            y: pos.y,
+            width: DEFAULT_ASSET_SIZE.width,
+            height: DEFAULT_ASSET_SIZE.height,
+          },
+        });
+        setSelectedAssetId(null);
+      } else if (tool === "line") {
+        if (lineStartPoint) {
+          createElementLocal({
+            type: "line",
+            sort_index: nextSortIndex,
+            props: {
+              points: [
+                lineStartPoint.x,
+                lineStartPoint.y,
+                pos.x,
+                pos.y,
+              ],
+              stroke: "#a3a3a3",
+              strokeWidth: 2,
+            },
+          });
+          setLineStartPoint(null);
+          setLineEndPoint(null);
+        } else {
+          setLineStartPoint(pos);
+          setLineEndPoint(pos);
+        }
+      }
+    },
+    [
+      tool,
+      elements,
+      createElementLocal,
+      selectedAssetId,
+      lineStartPoint,
+      getScenePosition,
+      setSelectedAssetId,
+    ],
+  );
+
+  const handleStageMouseMove = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (lineStartPoint && tool === "line") {
+        const pos = getScenePosition(e);
+        if (pos) setLineEndPoint(pos);
+      }
+    },
+    [lineStartPoint, tool, getScenePosition],
+  );
+
   const stagePosition = useMemo(
     () =>
       dimensions.width > 0 && dimensions.height > 0
@@ -267,21 +446,8 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
     return lines;
   }, []);
 
-  if (isFileLoading) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-black">
-        <p className="text-sm text-neutral-400">Loading canvas...</p>
-      </div>
-    );
-  }
-
-  if (!file) {
-    return (
-      <div className="absolute inset-0 flex items-center justify-center bg-black">
-        <p className="text-sm text-neutral-500">Canvas not found</p>
-      </div>
-    );
-  }
+  const isLoading = isFileLoading || isElementsLoading;
+  const isNotFound = !isLoading && !file;
 
   const toolButtonClass =
     "flex h-8 w-8 items-center justify-center text-neutral-400 hover:bg-neutral-800 transition-colors";
@@ -302,21 +468,25 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           ? "cursor-crosshair"
           : "cursor-default";
 
-  if (dimensions.width <= 0 || dimensions.height <= 0) {
-    return (
-      <div
-        ref={containerRef}
-        className="absolute inset-0 bg-black"
-        aria-hidden
-      />
-    );
-  }
-
   return (
     <div
       ref={containerRef}
       className={`absolute inset-0 bg-black ${cursorClass}`}
     >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black">
+          <p className="text-sm text-neutral-400">Loading canvas...</p>
+        </div>
+      )}
+
+      {isNotFound && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 bg-black">
+          <p className="text-sm text-neutral-500">Canvas not found</p>
+        </div>
+      )}
+
+      {!isLoading && !isNotFound && dimensions.width > 0 && dimensions.height > 0 && (
+        <>
       <div className="absolute top-3 left-3 z-10 flex cursor-pointer items-center gap-2">
         <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
@@ -331,7 +501,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           </button>
           <button
             type="button"
-            onClick={() => setTool("hand")}
+            onClick={() => setToolWithReset("hand")}
             className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "hand" ? toolButtonActiveClass : ""}`}
             title="Hand (pan canvas)"
             aria-label="Hand tool"
@@ -363,7 +533,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
         <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
-            onClick={() => setTool("rectangle")}
+            onClick={() => setToolWithReset("rectangle")}
             className={`rounded-l-md ${toolButtonClass} ${tool === "rectangle" ? toolButtonActiveClass : ""}`}
             title="Rectangle"
             aria-label="Rectangle (draw)"
@@ -383,7 +553,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           </button>
           <button
             type="button"
-            onClick={() => setTool("text")}
+            onClick={() => setToolWithReset("text")}
             className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "text" ? toolButtonActiveClass : ""}`}
             title="Text"
             aria-label="Text (draw)"
@@ -403,7 +573,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           </button>
           <button
             type="button"
-            onClick={() => setTool("comment")}
+            onClick={() => setToolWithReset("comment")}
             className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "comment" ? toolButtonActiveClass : ""}`}
             title="Add comment"
             aria-label="Add comment"
@@ -429,6 +599,8 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           )
         }
         onWheel={handleWheel}
+        onClick={handleStageClick}
+        onMouseMove={handleStageMouseMove}
         onDragStart={handleStageDragStart}
         onDragMove={handleStageDragMove}
         onDragEnd={handleStageDragEnd}
@@ -456,9 +628,54 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
             />
           ))}
         </Layer>
+        <Layer listening={true}>
+          {sortedElements.map((element) => (
+            <ElementNode
+              key={element.id}
+              element={element}
+              assetMap={assetMap}
+              tool={tool}
+              onUpdate={(props) =>
+                updateElementLocal(element.id, { props })
+              }
+            />
+          ))}
+          {lineStartPoint && lineEndPoint && tool === "line" && (
+            <Line
+              points={[
+                lineStartPoint.x,
+                lineStartPoint.y,
+                lineEndPoint.x,
+                lineEndPoint.y,
+              ]}
+              stroke="#a3a3a3"
+              strokeWidth={2}
+              dash={[4, 4]}
+              listening={false}
+            />
+          )}
+        </Layer>
       </Stage>
 
       <div className="absolute bottom-3 left-3 flex cursor-pointer items-center gap-2">
+        {(isSaving || lastSavedAt) && (
+          <div
+            className="flex items-center gap-2 px-2 py-1 rounded-lg border border-neutral-700 bg-neutral-900/90 text-xs"
+            aria-live="polite"
+          >
+            {isSaving ? (
+              <span className="flex items-center gap-1.5 text-neutral-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                Saving...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-neutral-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Saved
+              </span>
+            )}
+          </div>
+        )}
         <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
@@ -507,6 +724,145 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           </button>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
+}
+
+interface ElementNodeProps {
+  element: Element;
+  assetMap: Map<string, { id: string; name: string }>;
+  tool: CanvasTool;
+  onUpdate: (props: Partial<RectangleProps | LineProps | TextProps | AssetProps>) => void;
+}
+
+function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
+  const draggable = tool === "pointer";
+
+  const handleDragEnd = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      const node = e.target;
+      const x = node.x();
+      const y = node.y();
+      if (element.type === "rectangle" || element.type === "text") {
+        const props = element.props as RectangleProps | TextProps;
+        console.log(`${LOG_PREFIX} Element drag end: ${element.type} ${element.id} → (${x.toFixed(0)}, ${y.toFixed(0)})`);
+        onUpdate({ ...props, x, y });
+      } else if (element.type === "asset") {
+        const props = element.props as AssetProps;
+        console.log(`${LOG_PREFIX} Element drag end: asset ${element.id} → (${x.toFixed(0)}, ${y.toFixed(0)})`);
+        onUpdate({ ...props, x, y });
+      }
+    },
+    [element, onUpdate],
+  );
+
+  if (element.type === "rectangle") {
+    const p = element.props as RectangleProps;
+    return (
+      <Group
+        name="element"
+        x={p.x}
+        y={p.y}
+        draggable={draggable}
+        onDragEnd={handleDragEnd}
+        dragBoundFunc={(pos) => ({
+          x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.width, pos.x)),
+          y: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.height, pos.y)),
+        })}
+      >
+        <Rect
+          x={0}
+          y={0}
+          width={p.width}
+          height={p.height}
+          fill={p.fill ?? "#404040"}
+          stroke={p.stroke ?? "#52525b"}
+          strokeWidth={p.strokeWidth ?? 1}
+        />
+      </Group>
+    );
+  }
+
+  if (element.type === "line") {
+    const p = element.props as LineProps;
+    return (
+      <Line
+        name="element"
+        points={p.points}
+        stroke={p.stroke ?? "#a3a3a3"}
+        strokeWidth={p.strokeWidth ?? 2}
+        listening={true}
+      />
+    );
+  }
+
+  if (element.type === "text") {
+    const p = element.props as TextProps;
+    return (
+      <Group
+        name="element"
+        x={p.x}
+        y={p.y}
+        draggable={draggable}
+        onDragEnd={handleDragEnd}
+        dragBoundFunc={(pos) => ({
+          x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF, pos.x)),
+          y: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF, pos.y)),
+        })}
+      >
+        <Text
+          x={0}
+          y={0}
+          text={p.text}
+          fontSize={p.fontSize ?? 14}
+          fill={p.fill ?? "#ffffff"}
+          fontFamily="system-ui, sans-serif"
+          listening={false}
+        />
+      </Group>
+    );
+  }
+
+  if (element.type === "asset") {
+    const p = element.props as AssetProps;
+    const asset = assetMap.get(p.asset_id);
+    return (
+      <Group
+        name="element"
+        x={p.x}
+        y={p.y}
+        draggable={draggable}
+        onDragEnd={handleDragEnd}
+        dragBoundFunc={(pos) => ({
+          x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.width, pos.x)),
+          y: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.height, pos.y)),
+        })}
+      >
+        <Rect
+          x={0}
+          y={0}
+          width={p.width}
+          height={p.height}
+          fill="#404040"
+          stroke="#52525b"
+          strokeWidth={1}
+        />
+        <Text
+          x={0}
+          y={p.height / 2 - 8}
+          width={p.width}
+          text={asset?.name ?? "Asset"}
+          fontSize={12}
+          fontFamily="system-ui, sans-serif"
+          fill="white"
+          align="center"
+          listening={false}
+        />
+      </Group>
+    );
+  }
+
+  return null;
 }

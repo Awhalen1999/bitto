@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { useEffect, useState } from "react";
 import { CanvasHeader } from "@/lib/components/canvas/CanvasHeader";
 import { Library } from "@/lib/components/canvas/Library";
+import { AssetPlacementProvider } from "@/lib/contexts/AssetPlacementContext";
 
 export default function CanvasLayout({
   children,
@@ -27,18 +28,20 @@ export default function CanvasLayout({
   if (loading || !user) return null;
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-black">
-      <CanvasHeader fileId={fileId} />
+    <AssetPlacementProvider>
+      <div className="fixed inset-0 flex flex-col bg-black">
+        <CanvasHeader fileId={fileId} />
 
-      <div className="flex-1 flex overflow-hidden relative min-h-0">
-        <div className="flex-1 relative min-h-0">{children}</div>
+        <div className="flex-1 flex overflow-hidden relative min-h-0">
+          <div className="flex-1 relative min-h-0">{children}</div>
 
-        <Library
-          fileId={fileId}
-          isOpen={isDrawerOpen}
-          onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
-        />
+          <Library
+            fileId={fileId}
+            isOpen={isDrawerOpen}
+            onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
+          />
+        </div>
       </div>
-    </div>
+    </AssetPlacementProvider>
   );
 }
