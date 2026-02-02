@@ -21,11 +21,9 @@ import { Stage, Layer, Group, Rect, Line, Text } from "react-konva";
 import type Konva from "konva";
 import { useCanvas } from "@/lib/hooks/useCanvas";
 import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
-import { useUpdateCanvas } from "@/lib/hooks/useUpdateCanvas";
 import { useUpdateAsset } from "@/lib/hooks/useUpdateAsset";
 import type { Asset } from "@/lib/api/assets";
 
-const VIEWPORT_SAVE_DEBOUNCE_MS = 1500;
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
 const ZOOM_INCREMENT = 0.1;
@@ -74,37 +72,15 @@ interface KonvaCanvasProps {
 export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
-  const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [viewport, setViewport] = useState({
-    x: 0,
-    y: 0,
-    scale: 1,
-  });
-  const [isSavingViewport, setIsSavingViewport] = useState(false);
+  const [viewport, setViewport] = useState({ x: 0, y: 0, scale: 1 });
   const [tool, setTool] = useState<CanvasTool>("hand");
   const [isPanning, setIsPanning] = useState(false);
 
   const { data: canvas, isLoading: isCanvasLoading } = useCanvas(canvasId);
   const { data: assets = [] } = useCanvasAssets(canvasId);
-  const { mutate: updateCanvas } = useUpdateCanvas(canvasId);
   const { mutate: updateAsset } = useUpdateAsset(canvasId);
-  const hasSyncedViewportRef = useRef(false);
-
-  useEffect(() => {
-    if (!canvas || hasSyncedViewportRef.current) return;
-    hasSyncedViewportRef.current = true;
-    queueMicrotask(() =>
-      setViewport({
-        x: canvas.viewport_x,
-        y: canvas.viewport_y,
-        scale: canvas.viewport_scale,
-      }),
-    );
-  }, [canvas]);
 
   const measureRef = useRef(() => {
     const el = containerRef.current;
@@ -122,28 +98,6 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     ro.observe(el);
     return () => ro.disconnect();
   }, [canvas]);
-
-  const saveViewport = useCallback(
-    (x: number, y: number, scale: number) => {
-      if (viewportSaveTimeoutRef.current) {
-        clearTimeout(viewportSaveTimeoutRef.current);
-      }
-
-      viewportSaveTimeoutRef.current = setTimeout(() => {
-        setIsSavingViewport(true);
-        updateCanvas(
-          { viewport_x: x, viewport_y: y, viewport_scale: scale },
-          {
-            onSettled: () => {
-              setIsSavingViewport(false);
-              viewportSaveTimeoutRef.current = null;
-            },
-          },
-        );
-      }, VIEWPORT_SAVE_DEBOUNCE_MS);
-    },
-    [updateCanvas],
-  );
 
   const zoomBy = useCallback(
     (direction: 1 | -1) => {
@@ -176,9 +130,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       stage.scale({ x: newScale, y: newScale });
       stage.position({ x: newX, y: newY });
       setViewport({ x: newX, y: newY, scale: newScale });
-      saveViewport(newX, newY, newScale);
     },
-    [viewport, dimensions, saveViewport],
+    [viewport, dimensions],
   );
 
   useEffect(() => {
@@ -235,9 +188,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       );
       stageRef.current?.position({ x, y });
       setViewport((prev) => ({ ...prev, x, y }));
-      saveViewport(x, y, scale);
     },
-    [viewport.scale, dimensions, saveViewport],
+    [viewport.scale, dimensions],
   );
 
   const handleWheel = useCallback(
@@ -259,9 +211,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
 
       stage.position({ x: newX, y: newY });
       setViewport((prev) => ({ ...prev, x: newX, y: newY }));
-      saveViewport(newX, newY, viewport.scale);
     },
-    [tool, viewport, dimensions, saveViewport],
+    [tool, viewport, dimensions],
   );
 
   const handleAssetDragEnd = useCallback(
@@ -300,14 +251,6 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       lines.push([-CANVAS_HALF, i, CANVAS_HALF, i]);
     }
     return lines;
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (viewportSaveTimeoutRef.current) {
-        clearTimeout(viewportSaveTimeoutRef.current);
-      }
-    };
   }, []);
 
   if (isCanvasLoading) {
@@ -492,11 +435,6 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           </button>
         </div>
 
-        {isSavingViewport && (
-          <span className="rounded-lg border border-neutral-700 bg-neutral-900 px-2 py-1.5 text-xs text-neutral-500">
-            Saving…
-          </span>
-        )}
       </div>
     </div>
   );

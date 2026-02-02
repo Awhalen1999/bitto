@@ -7,9 +7,6 @@ export interface Canvas {
   id: string;
   name: string;
   owner_id: string;
-  viewport_x: number;
-  viewport_y: number;
-  viewport_scale: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -35,12 +32,7 @@ export async function createCanvas(data: { name: string }): Promise<Canvas> {
 
 export async function updateCanvas(
   canvasId: string,
-  data: {
-    name?: string;
-    viewport_x?: number;
-    viewport_y?: number;
-    viewport_scale?: number;
-  },
+  data: { name?: string },
 ): Promise<Canvas> {
   return apiClient(`/api/canvases/${canvasId}`, {
     method: "PATCH",
