@@ -5,19 +5,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import { CanvasFileIcon } from "@/lib/components/shared/FileIcons";
-import { useDeleteCanvas } from "@/lib/hooks/useDeleteCanvas";
-import type { Canvas } from "@/lib/api/canvases";
+import { useDeleteFile } from "@/lib/hooks/useDeleteFile";
+import type { File } from "@/lib/api/files";
 
-interface CanvasCardProps {
-  canvas: Canvas;
+interface FileCardProps {
+  file: File;
 }
 
-export function CanvasCard({ canvas }: CanvasCardProps) {
+export function FileCard({ file }: FileCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const { mutate: deleteCanvas, isPending: isDeleting } = useDeleteCanvas();
+  const { mutate: deleteFile, isPending: isDeleting } = useDeleteFile();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -38,16 +38,16 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
     setIsMenuOpen(false);
 
     if (action === "open") {
-      router.push(`/canvas/${canvas.id}`);
+      router.push(`/canvas/${file.id}`);
     } else if (action === "trash") {
       handleDelete();
     }
   };
 
   const handleDelete = () => {
-    deleteCanvas(canvas.id, {
+    deleteFile(file.id, {
       onSuccess: () => {
-        console.log(`✅ Moved "${canvas.name}" to trash`);
+        console.log(`✅ Moved "${file.name}" to trash`);
       },
       onError: (error) => {
         alert(
@@ -74,12 +74,12 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
 
   return (
     <div className="group relative" onContextMenu={handleContextMenu}>
-      <Link href={`/canvas/${canvas.id}`}>
+      <Link href={`/canvas/${file.id}`}>
         <div className="relative bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden hover:border-neutral-700 transition-all cursor-pointer">
           <div className="aspect-4/3 bg-neutral-800 flex items-center justify-center relative">
             <div className="absolute top-2 left-2 flex -space-x-2" />
             <div className="w-full h-full bg-linear-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-              <p className="text-neutral-500 text-sm">Canvas Preview</p>
+              <p className="text-neutral-500 text-sm">File preview</p>
             </div>
             <button
               onClick={(e) => {
@@ -97,8 +97,8 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
           <div className="p-3 flex items-center gap-3">
             <CanvasFileIcon />
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-white truncate leading-tight">{canvas.name}</h3>
-              <p className="text-xs text-neutral-500 mt-0.5">Edited {formatDate(canvas.updated_at)}</p>
+              <h3 className="text-sm font-medium text-white truncate leading-tight">{file.name}</h3>
+              <p className="text-xs text-neutral-500 mt-0.5">Edited {formatDate(file.updated_at)}</p>
             </div>
           </div>
         </div>
@@ -119,7 +119,7 @@ export function CanvasCard({ canvas }: CanvasCardProps) {
           </button>
           <button
             onClick={() => {
-              window.open(`/canvas/${canvas.id}`, "_blank");
+              window.open(`/canvas/${file.id}`, "_blank");
               setIsMenuOpen(false);
             }}
             disabled={isDeleting}

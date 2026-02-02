@@ -5,7 +5,7 @@ import { KonvaCanvas } from "@/lib/components/canvas/KonvaCanvas";
 
 export default function CanvasEditorPage() {
   const params = useParams();
-  const canvasId = params.id as string;
+  const fileId = params.id as string;
 
-  return <KonvaCanvas canvasId={canvasId} />;
+  return <KonvaCanvas fileId={fileId} />;
 }

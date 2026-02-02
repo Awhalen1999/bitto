@@ -1,11 +1,11 @@
-import { CanvasView } from "@/lib/components/dashboard/CanvasView";
+import { FileView } from "@/lib/components/dashboard/FileView";
 
 export default function MyFilesPage() {
   return (
-    <CanvasView
+    <FileView
       view="my-files"
       title="My files"
-      subtitle="Canvases you created"
+      subtitle="Files you created"
     />
   );
 }

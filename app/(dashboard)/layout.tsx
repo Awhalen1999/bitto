@@ -8,7 +8,7 @@ import {
   DashboardHeader,
   SortOption,
 } from "@/lib/components/dashboard/DashboardHeader";
-import { CreateCanvasModal } from "@/lib/components/dashboard/CreateCanvasModal";
+import { CreateFileModal } from "@/lib/components/dashboard/CreateFileModal";
 
 export default function DashboardLayout({
   children,
@@ -41,7 +41,7 @@ export default function DashboardLayout({
     router.push(`${window.location.pathname}${newUrl}`, { scroll: false });
   };
 
-  const handleCreateCanvas = () => {
+  const handleCreateFile = () => {
     setIsCreateModalOpen(true);
   };
 
@@ -54,7 +54,7 @@ export default function DashboardLayout({
 
         <div className="flex-1 flex flex-col overflow-hidden">
           <DashboardHeader
-            onCreateCanvas={handleCreateCanvas}
+            onCreateFile={handleCreateFile}
             sortBy={sortBy}
             onSortChange={handleSortChange}
           />
@@ -63,7 +63,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      <CreateCanvasModal
+      <CreateFileModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
       />

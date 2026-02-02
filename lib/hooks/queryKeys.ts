@@ -1,9 +1,9 @@
 export const queryKeys = {
-  // Canvas queries
-  canvases: (view: string, sort: string) => ["canvases", view, sort] as const,
-  canvas: (id: string) => ["canvas", id] as const,
+  // File queries
+  files: (view: string, sort: string) => ["files", view, sort] as const,
+  file: (id: string) => ["file", id] as const,
 
   // Asset queries
-  canvasAssets: (canvasId: string) => ["assets", "canvas", canvasId] as const,
+  fileAssets: (fileId: string) => ["assets", "file", fileId] as const,
   asset: (id: string) => ["asset", id] as const,
 } as const;

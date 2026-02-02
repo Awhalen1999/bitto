@@ -1,11 +1,11 @@
-import { CanvasView } from "@/lib/components/dashboard/CanvasView";
+import { FileView } from "@/lib/components/dashboard/FileView";
 
 export default function AllFilesPage() {
   return (
-    <CanvasView
+    <FileView
       view="all"
       title="All files"
-      subtitle="All canvases you have access to"
+      subtitle="All files you have access to"
     />
   );
 }

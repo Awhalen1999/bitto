@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 
 export interface Asset {
   id: string;
-  canvas_id: string;
+  file_id: string;
   name: string;
   file_type: string;
   r2_url: string;
@@ -15,8 +15,8 @@ export interface Asset {
   updated_at: string;
 }
 
-export async function getCanvasAssets(canvasId: string): Promise<Asset[]> {
-  return apiClient(`/api/assets/canvas/${canvasId}`);
+export async function getFileAssets(fileId: string): Promise<Asset[]> {
+  return apiClient(`/api/assets/file/${fileId}`);
 }
 
 export async function getAsset(assetId: string): Promise<Asset> {
@@ -24,7 +24,7 @@ export async function getAsset(assetId: string): Promise<Asset> {
 }
 
 export async function createAsset(data: {
-  canvas_id: string;
+  file_id: string;
   name: string;
   file_type: string;
   r2_url: string;

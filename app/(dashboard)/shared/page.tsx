@@ -1,12 +1,12 @@
-import { CanvasView } from "@/lib/components/dashboard/CanvasView";
+import { FileView } from "@/lib/components/dashboard/FileView";
 
 export default function SharedPage() {
   return (
-    <CanvasView
+    <FileView
       view="shared"
       title="Shared with me"
-      subtitle="Canvases others have shared with you"
-      emptyMessage="No shared canvases yet."
+      subtitle="Files others have shared with you"
+      emptyMessage="No shared files yet."
     />
   );
 }

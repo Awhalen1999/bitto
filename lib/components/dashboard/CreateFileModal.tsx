@@ -3,37 +3,36 @@
 import { useState } from "react";
 import { Modal } from "@/lib/components/shared/Modal";
 import { useRouter } from "next/navigation";
-import { useCreateCanvas } from "@/lib/hooks/useCreateCanvas";
+import { useCreateFile } from "@/lib/hooks/useCreateFile";
 
-interface CreateCanvasModalProps {
+interface CreateFileModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function CreateCanvasModal({
+export function CreateFileModal({
   open,
   onOpenChange,
-}: CreateCanvasModalProps) {
+}: CreateFileModalProps) {
   const [name, setName] = useState("");
   const router = useRouter();
-  const { mutate: createCanvas, isPending } = useCreateCanvas();
+  const { mutate: createFile, isPending } = useCreateFile();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!name.trim()) return;
 
-    createCanvas(
-      { name: name.trim() },
+    createFile(
+      { name: name.trim(), file_type: "canvas" },
       {
-        onSuccess: (canvas) => {
+        onSuccess: (file) => {
           onOpenChange(false);
           setName("");
-          // Navigate to the new canvas editor
-          router.push(`/canvas/${canvas.id}`);
+          router.push(`/canvas/${file.id}`);
         },
         onError: (error) => {
-          console.error("Failed to create canvas:", error);
+          console.error("Failed to create file:", error);
           // TODO: Show error toast
         },
       },
@@ -51,18 +50,18 @@ export function CreateCanvasModal({
     <Modal
       open={open}
       onOpenChange={handleClose}
-      title="Create new canvas"
-      description="Give your canvas a name to get started"
+      title="Create new file"
+      description="Give your file a name to get started"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="canvas-name" className="block text-sm font-medium text-neutral-300 mb-2">
-            Canvas name
+          <label htmlFor="file-name" className="block text-sm font-medium text-neutral-300 mb-2">
+            File name
           </label>
           <input
-            id="canvas-name"
+            id="file-name"
             type="text"
-            placeholder="My awesome game design"
+            placeholder="My new file"
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={isPending}
@@ -85,7 +84,7 @@ export function CreateCanvasModal({
             disabled={isPending || !name.trim()}
             className="px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isPending ? "Creating..." : "Create canvas"}
+            {isPending ? "Creating..." : "Create file"}
           </button>
         </div>
       </form>

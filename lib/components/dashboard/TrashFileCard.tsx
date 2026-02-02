@@ -3,21 +3,21 @@
 import { useState, useRef, useEffect } from "react";
 import { MoreVertical } from "lucide-react";
 import { CanvasFileIcon } from "@/lib/components/shared/FileIcons";
-import { useRestoreCanvas } from "@/lib/hooks/useRestoreCanvas";
-import { usePermanentDeleteCanvas } from "@/lib/hooks/usePermanentDeleteCanvas";
-import type { Canvas } from "@/lib/api/canvases";
+import { useRestoreFile } from "@/lib/hooks/useRestoreFile";
+import { usePermanentDeleteFile } from "@/lib/hooks/usePermanentDeleteFile";
+import type { File } from "@/lib/api/files";
 
-interface TrashCanvasCardProps {
-  canvas: Canvas;
+interface TrashFileCardProps {
+  file: File;
 }
 
-export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
+export function TrashFileCard({ file }: TrashFileCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const { mutate: restoreCanvas, isPending: isRestoring } = useRestoreCanvas();
+  const { mutate: restoreFile, isPending: isRestoring } = useRestoreFile();
   const { mutate: permanentDelete, isPending: isDeleting } =
-    usePermanentDeleteCanvas();
+    usePermanentDeleteFile();
 
   const isPending = isRestoring || isDeleting;
 
@@ -39,9 +39,9 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
 
   const handleRestore = () => {
     setIsMenuOpen(false);
-    restoreCanvas(canvas.id, {
+    restoreFile(file.id, {
       onSuccess: () => {
-        console.log(`✅ Restored "${canvas.name}"`);
+        console.log(`✅ Restored "${file.name}"`);
       },
       onError: (error) => {
         alert(
@@ -55,14 +55,14 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
     setIsMenuOpen(false);
 
     if (
-      !confirm(`Permanently delete "${canvas.name}"? This cannot be undone.`)
+      !confirm(`Permanently delete "${file.name}"? This cannot be undone.`)
     ) {
       return;
     }
 
-    permanentDelete(canvas.id, {
+    permanentDelete(file.id, {
       onSuccess: () => {
-        console.log(`✅ Permanently deleted "${canvas.name}"`);
+        console.log(`✅ Permanently deleted "${file.name}"`);
       },
       onError: (error) => {
         alert(
@@ -92,7 +92,7 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
       >
         <div className="aspect-4/3 bg-neutral-800 flex items-center justify-center relative opacity-60">
           <div className="w-full h-full bg-linear-to-br from-neutral-800 to-neutral-900 flex items-center justify-center">
-            <p className="text-neutral-400 text-sm">Deleted Canvas</p>
+            <p className="text-neutral-400 text-sm">Deleted file</p>
           </div>
           <button
             onClick={(e) => {
@@ -110,9 +110,9 @@ export function TrashCanvasCard({ canvas }: TrashCanvasCardProps) {
         <div className="p-3 flex items-center gap-2.5">
           <CanvasFileIcon />
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-white truncate leading-tight">{canvas.name}</h3>
+            <h3 className="text-sm font-medium text-white truncate leading-tight">{file.name}</h3>
             <p className="text-xs text-neutral-500 mt-0.5">
-              {formatDate(canvas.deleted_at!)}
+              {formatDate(file.deleted_at!)}
             </p>
           </div>
         </div>

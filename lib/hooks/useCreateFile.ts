@@ -1,15 +1,15 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { restoreCanvas } from "@/lib/api/canvases";
+import { createFile } from "@/lib/api/files";
 
-export function useRestoreCanvas() {
+export function useCreateFile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: restoreCanvas,
+    mutationFn: createFile,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["canvases"] });
+      queryClient.invalidateQueries({ queryKey: ["files"] });
     },
   });
 }

@@ -14,13 +14,13 @@ const sortOptions = [
 ];
 
 interface DashboardHeaderProps {
-  onCreateCanvas: () => void;
+  onCreateFile: () => void;
   sortBy: SortOption;
   onSortChange: (sort: SortOption) => void;
 }
 
 export function DashboardHeader({
-  onCreateCanvas,
+  onCreateFile,
   sortBy,
   onSortChange,
 }: DashboardHeaderProps) {
@@ -32,7 +32,7 @@ export function DashboardHeader({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
         <input
           type="text"
-          placeholder="Search canvases..."
+          placeholder="Search files..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-10 pr-4 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-white text-sm focus:outline-none focus:border-neutral-600 placeholder:text-neutral-500"
@@ -42,11 +42,11 @@ export function DashboardHeader({
       <div className="flex items-center gap-3">
         <Dropdown options={sortOptions} value={sortBy} onChange={onSortChange} label="Sort" />
         <button
-          onClick={onCreateCanvas}
+          onClick={onCreateFile}
           className="px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-neutral-200 transition-colors text-sm flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          New Canvas
+          New File
         </button>
       </div>
     </header>

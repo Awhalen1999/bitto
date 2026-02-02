@@ -3,15 +3,15 @@
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { CanvasFileIcon } from "@/lib/components/shared/FileIcons";
-import { useCanvas } from "@/lib/hooks/useCanvas";
+import { useFile } from "@/lib/hooks/useFile";
 
 interface CanvasHeaderProps {
-  canvasId: string;
+  fileId: string;
 }
 
-export function CanvasHeader({ canvasId }: CanvasHeaderProps) {
+export function CanvasHeader({ fileId }: CanvasHeaderProps) {
   const router = useRouter();
-  const { data: canvas, isLoading } = useCanvas(canvasId);
+  const { data: file, isLoading } = useFile(fileId);
 
   const formatRelativeTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -42,17 +42,17 @@ export function CanvasHeader({ canvasId }: CanvasHeaderProps) {
         <div className="flex items-center gap-2">
           <CanvasFileIcon size="sm" />
           <h1 className="text-sm font-medium text-neutral-200">
-            {isLoading ? "Loading..." : canvas?.name || "Untitled Canvas"}
+            {isLoading ? "Loading..." : file?.name || "Untitled Canvas"}
           </h1>
           <span className="text-xs text-neutral-500">/</span>
           <span className="text-xs text-neutral-500">
-            {canvasId.substring(0, 12)}...
+            {fileId.substring(0, 12)}...
           </span>
-          {canvas?.updated_at && (
+          {file?.updated_at && (
             <>
               <span className="text-xs text-neutral-500">/</span>
               <span className="text-xs text-neutral-500">
-                Edited {formatRelativeTime(canvas.updated_at)}
+                Edited {formatRelativeTime(file.updated_at)}
               </span>
             </>
           )}

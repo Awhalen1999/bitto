@@ -14,7 +14,7 @@ export default function CanvasLayout({
   const params = useParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-  const canvasId = params.id as string;
+  const fileId = params.id as string;
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(true);
 
@@ -28,13 +28,13 @@ export default function CanvasLayout({
 
   return (
     <div className="fixed inset-0 flex flex-col bg-black">
-      <CanvasHeader canvasId={canvasId} />
+      <CanvasHeader fileId={fileId} />
 
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         <div className="flex-1 relative min-h-0">{children}</div>
 
         <Library
-          canvasId={canvasId}
+          fileId={fileId}
           isOpen={isDrawerOpen}
           onToggle={() => setIsDrawerOpen(!isDrawerOpen)}
         />

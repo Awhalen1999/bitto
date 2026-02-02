@@ -2,19 +2,19 @@
 
 import { useMemo, useState } from "react";
 import { FolderUp, PanelRightOpen, Search, X } from "lucide-react";
-import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
+import { useFileAssets } from "@/lib/hooks/useFileAssets";
 
 const STORAGE_LIMIT = 50;
 
 interface LibraryProps {
-  canvasId: string;
+  fileId: string;
   isOpen: boolean;
   onToggle: () => void;
 }
 
-export function Library({ canvasId, isOpen, onToggle }: LibraryProps) {
+export function Library({ fileId, isOpen, onToggle }: LibraryProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const { data: assets = [], isLoading } = useCanvasAssets(canvasId);
+  const { data: assets = [], isLoading } = useFileAssets(fileId);
 
   const filteredAssets = useMemo(() => {
     if (!searchQuery.trim()) return assets;

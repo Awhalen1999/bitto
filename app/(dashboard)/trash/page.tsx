@@ -1,11 +1,11 @@
-import { CanvasView } from "@/lib/components/dashboard/CanvasView";
+import { FileView } from "@/lib/components/dashboard/FileView";
 
 export default function TrashPage() {
   return (
-    <CanvasView
+    <FileView
       view="trash"
       title="Trash"
-      subtitle="Deleted canvases"
+      subtitle="Deleted files"
       emptyMessage="Trash is empty."
     />
   );

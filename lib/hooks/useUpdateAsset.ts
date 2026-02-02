@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateAsset } from "@/lib/api/assets";
 import { queryKeys } from "./queryKeys";
 
-export function useUpdateAsset(canvasId: string) {
+export function useUpdateAsset(fileId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -24,7 +24,7 @@ export function useUpdateAsset(canvasId: string) {
     }) => updateAsset(assetId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: queryKeys.canvasAssets(canvasId),
+        queryKey: queryKeys.fileAssets(fileId),
       });
     },
   });

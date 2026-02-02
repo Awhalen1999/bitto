@@ -1,29 +1,29 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useCanvases } from "@/lib/hooks/useCanvases";
+import { useFiles } from "@/lib/hooks/useFiles";
 import { SortOption } from "@/lib/components/dashboard/DashboardHeader";
-import { ViewType } from "@/lib/api/canvases";
-import { CanvasGrid } from "./CanvasGrid";
+import { ViewType } from "@/lib/api/files";
+import { FileGrid } from "./FileGrid";
 import { FileText } from "lucide-react";
 
-interface CanvasViewProps {
+interface FileViewProps {
   view: ViewType;
   title: string;
   subtitle: string;
   emptyMessage?: string;
 }
 
-export function CanvasView({
+export function FileView({
   view,
   title,
   subtitle,
   emptyMessage,
-}: CanvasViewProps) {
+}: FileViewProps) {
   const searchParams = useSearchParams();
   const sortBy = (searchParams.get("sort") as SortOption) || "last-modified";
 
-  const { data: canvases, isLoading, error } = useCanvases(view, sortBy);
+  const { data: files, isLoading, error } = useFiles(view, sortBy);
 
   if (isLoading) {
     return (
@@ -50,16 +50,16 @@ export function CanvasView({
       <h2 className="text-2xl font-bold text-white mb-2">{title}</h2>
       <p className="text-sm text-neutral-400 mb-6">{subtitle}</p>
 
-      {!canvases || canvases.length === 0 ? (
+      {!files || files.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <div className="w-16 h-16 rounded-full bg-neutral-800 flex items-center justify-center mb-4">
             <FileText className="w-8 h-8 text-neutral-600" />
           </div>
-          <p className="text-neutral-400 text-lg mb-2">{emptyMessage || "No canvases yet"}</p>
-          <p className="text-neutral-500 text-sm">Create your first canvas to get started</p>
+          <p className="text-neutral-400 text-lg mb-2">{emptyMessage || "No files yet"}</p>
+          <p className="text-neutral-500 text-sm">Create your first file to get started</p>
         </div>
       ) : (
-        <CanvasGrid canvases={canvases} isTrash={view === "trash"} />
+        <FileGrid files={files} isTrash={view === "trash"} />
       )}
     </div>
   );

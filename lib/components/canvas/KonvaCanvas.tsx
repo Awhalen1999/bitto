@@ -25,8 +25,8 @@ import {
 } from "lucide-react";
 import { Stage, Layer, Group, Rect, Line, Text } from "react-konva";
 import type Konva from "konva";
-import { useCanvas } from "@/lib/hooks/useCanvas";
-import { useCanvasAssets } from "@/lib/hooks/useCanvasAssets";
+import { useFile } from "@/lib/hooks/useFile";
+import { useFileAssets } from "@/lib/hooks/useFileAssets";
 import { useUpdateAsset } from "@/lib/hooks/useUpdateAsset";
 import type { Asset } from "@/lib/api/assets";
 
@@ -80,10 +80,10 @@ function clampViewport(
 }
 
 interface KonvaCanvasProps {
-  canvasId: string;
+  fileId: string;
 }
 
-export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
+export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
 
@@ -92,9 +92,9 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
   const [tool, setTool] = useState<CanvasTool>("hand");
   const [isPanning, setIsPanning] = useState(false);
 
-  const { data: canvas, isLoading: isCanvasLoading } = useCanvas(canvasId);
-  const { data: assets = [] } = useCanvasAssets(canvasId);
-  const { mutate: updateAsset } = useUpdateAsset(canvasId);
+  const { data: file, isLoading: isFileLoading } = useFile(fileId);
+  const { data: assets = [] } = useFileAssets(fileId);
+  const { mutate: updateAsset } = useUpdateAsset(fileId);
 
   const measureRef = useRef(() => {
     const el = containerRef.current;
@@ -111,7 +111,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     const ro = new ResizeObserver(measureRef.current);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [canvas]);
+  }, [fileId]);
 
   const zoomBy = useCallback(
     (direction: 1 | -1) => {
@@ -281,7 +281,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     return lines;
   }, []);
 
-  if (isCanvasLoading) {
+  if (isFileLoading) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         <p className="text-sm text-neutral-400">Loading canvas...</p>
@@ -289,7 +289,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     );
   }
 
-  if (!canvas) {
+  if (!file) {
     return (
       <div className="absolute inset-0 flex items-center justify-center bg-black">
         <p className="text-sm text-neutral-500">Canvas not found</p>
