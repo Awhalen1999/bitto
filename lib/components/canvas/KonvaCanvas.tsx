@@ -12,8 +12,10 @@ import {
   Hand,
   FilePlus,
   Lock,
+  MessageSquare,
   Minus,
   MousePointer2,
+  Move,
   PencilLine,
   Plus,
   Redo2,
@@ -46,7 +48,8 @@ type CanvasTool =
   | "rectangle"
   | "line"
   | "text"
-  | "asset";
+  | "asset"
+  | "comment";
 
 /** Keep the visible area inside the canvas so we never show black outside the grid. */
 function clampViewport(
@@ -226,6 +229,20 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
     [tool, viewport, dimensions],
   );
 
+  const centerView = useCallback(() => {
+    const centerX = dimensions.width / 2;
+    const centerY = dimensions.height / 2;
+    const { x, y } = clampViewport(
+      centerX,
+      centerY,
+      viewport.scale,
+      dimensions.width,
+      dimensions.height,
+    );
+    stageRef.current?.position({ x, y });
+    setViewport((prev) => ({ ...prev, x, y }));
+  }, [viewport.scale, dimensions]);
+
   const handleAssetDragEnd = useCallback(
     (assetId: string, x: number, y: number) => {
       updateAsset({ assetId, data: { x, y } });
@@ -294,7 +311,8 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         : tool === "rectangle" ||
             tool === "line" ||
             tool === "text" ||
-            tool === "asset"
+            tool === "asset" ||
+            tool === "comment"
           ? "cursor-crosshair"
           : "cursor-default";
 
@@ -338,12 +356,21 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => setTool("pointer")}
-            className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "pointer" ? toolButtonActiveClass : ""}`}
+            className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "pointer" ? toolButtonActiveClass : ""}`}
             title="Pointer (select items)"
             aria-label="Pointer tool"
             aria-pressed={tool === "pointer"}
           >
             <MousePointer2 className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={centerView}
+            className="rounded-r-md border-l border-neutral-700 flex h-8 w-8 items-center justify-center text-neutral-400 hover:bg-neutral-800 transition-colors"
+            title="Center view at 0,0"
+            aria-label="Center view"
+          >
+            <Move className="h-4 w-4" />
           </button>
         </div>
 
@@ -381,12 +408,22 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
           <button
             type="button"
             onClick={() => setTool("asset")}
-            className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "asset" ? toolButtonActiveClass : ""}`}
+            className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "asset" ? toolButtonActiveClass : ""}`}
             title="Add asset (click canvas to upload at that spot)"
             aria-label="Add asset (upload)"
             aria-pressed={tool === "asset"}
           >
             <FilePlus className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("comment")}
+            className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "comment" ? toolButtonActiveClass : ""}`}
+            title="Add comment"
+            aria-label="Add comment"
+            aria-pressed={tool === "comment"}
+          >
+            <MessageSquare className="h-4 w-4" />
           </button>
         </div>
       </div>
