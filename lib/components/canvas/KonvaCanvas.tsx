@@ -23,7 +23,7 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
-import { Stage, Layer, Rect, Line, Group, Text } from "react-konva";
+import { Stage, Layer, Rect, Line, Group, Text, Transformer } from "react-konva";
 import type Konva from "konva";
 import { useFile } from "@/lib/hooks/useFile";
 import { useCanvasElements } from "@/lib/hooks/useCanvasElements";
@@ -48,8 +48,8 @@ const GRID_STROKE = "#404040";
 const GRID_STROKE_WIDTH = 0.5;
 const CANVAS_FILL = "#171717";
 
-const DEFAULT_RECT_SIZE = { width: 120, height: 80 };
 const DEFAULT_ASSET_SIZE = { width: 120, height: 80 };
+const MIN_RECT_SIZE = 4;
 const LOG_PREFIX = "[Canvas]";
 
 type CanvasTool =
@@ -124,6 +124,13 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
     y: number;
   } | null>(null);
 
+  const [rectDrawStart, setRectDrawStart] = useState<{ x: number; y: number } | null>(null);
+  const [rectDrawCurrent, setRectDrawCurrent] = useState<{ x: number; y: number } | null>(null);
+
+  const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const selectedNodeRef = useRef<Konva.Node | null>(null);
+  const transformerRef = useRef<Konva.Transformer>(null);
+
   const assetMap = useMemo(
     () => new Map(assets.map((a) => [a.id, a])),
     [assets],
@@ -192,6 +199,13 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
       if (newTool !== "line") {
         setLineStartPoint(null);
         setLineEndPoint(null);
+      }
+      if (newTool !== "pointer") {
+        setSelectedElementId(null);
+      }
+      if (newTool !== "rectangle") {
+        setRectDrawStart(null);
+        setRectDrawCurrent(null);
       }
     },
     [],
@@ -308,9 +322,90 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
     [],
   );
 
+  const handleStageMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (tool !== "rectangle") return;
+      let node: Konva.Node | null = e.target;
+      while (node) {
+        if (node.getAttr?.("name") === "element") return;
+        node = node.getParent();
+      }
+      const pos = getScenePosition(e);
+      if (!pos) return;
+      const inBounds =
+        pos.x >= -CANVAS_HALF &&
+        pos.x <= CANVAS_HALF &&
+        pos.y >= -CANVAS_HALF &&
+        pos.y <= CANVAS_HALF;
+      if (!inBounds) return;
+      setRectDrawStart(pos);
+      setRectDrawCurrent(pos);
+    },
+    [tool, getScenePosition],
+  );
+
+  const handleStageMouseUp = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      if (tool !== "rectangle" || !rectDrawStart) return;
+      const pos = getScenePosition(e);
+      if (!pos) {
+        setRectDrawStart(null);
+        setRectDrawCurrent(null);
+        return;
+      }
+      const x = Math.min(rectDrawStart.x, pos.x);
+      const y = Math.min(rectDrawStart.y, pos.y);
+      let width = Math.abs(pos.x - rectDrawStart.x);
+      let height = Math.abs(pos.y - rectDrawStart.y);
+      if (width < MIN_RECT_SIZE && height < MIN_RECT_SIZE) {
+        setRectDrawStart(null);
+        setRectDrawCurrent(null);
+        return;
+      }
+      width = Math.max(width, MIN_RECT_SIZE);
+      height = Math.max(height, MIN_RECT_SIZE);
+
+      const nextSortIndex =
+        elements.length > 0
+          ? Math.max(...elements.map((el) => el.sort_index)) + 1
+          : 0;
+      createElementLocal({
+        type: "rectangle",
+        sort_index: nextSortIndex,
+        props: {
+          x,
+          y,
+          width,
+          height,
+          stroke: "#52525b",
+          strokeWidth: 1,
+        },
+      });
+      setRectDrawStart(null);
+      setRectDrawCurrent(null);
+    },
+    [
+      tool,
+      rectDrawStart,
+      elements,
+      createElementLocal,
+      getScenePosition,
+    ],
+  );
+
   const handleStageClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
       if (tool === "hand" || tool === "lock" || tool === "comment") return;
+      if (tool === "pointer") {
+        let node: Konva.Node | null = e.target;
+        while (node) {
+          if (node.getAttr?.("name") === "element") return;
+          node = node.getParent();
+        }
+        setSelectedElementId(null);
+        return;
+      }
+      if (tool === "rectangle") return;
       let node: Konva.Node | null = e.target;
       while (node) {
         if (node.getAttr?.("name") === "element") return;
@@ -331,22 +426,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           ? Math.max(...elements.map((el) => el.sort_index)) + 1
           : 0;
 
-      if (tool === "rectangle") {
-        console.log(`${LOG_PREFIX} Stage click: create rectangle at (${pos.x.toFixed(0)}, ${pos.y.toFixed(0)})`);
-        createElementLocal({
-          type: "rectangle",
-          sort_index: nextSortIndex,
-          props: {
-            x: pos.x,
-            y: pos.y,
-            width: DEFAULT_RECT_SIZE.width,
-            height: DEFAULT_RECT_SIZE.height,
-            fill: "#404040",
-            stroke: "#52525b",
-            strokeWidth: 1,
-          },
-        });
-      } else if (tool === "text") {
+      if (tool === "text") {
         createElementLocal({
           type: "text",
           sort_index: nextSortIndex,
@@ -409,13 +489,21 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
 
   const handleStageMouseMove = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (lineStartPoint && tool === "line") {
-        const pos = getScenePosition(e);
-        if (pos) setLineEndPoint(pos);
-      }
+      const pos = getScenePosition(e);
+      if (!pos) return;
+      if (lineStartPoint && tool === "line") setLineEndPoint(pos);
+      else if (rectDrawStart && tool === "rectangle") setRectDrawCurrent(pos);
     },
-    [lineStartPoint, tool, getScenePosition],
+    [lineStartPoint, rectDrawStart, tool, getScenePosition],
   );
+
+  useLayoutEffect(() => {
+    if (!selectedElementId || !transformerRef.current) return;
+    if (selectedNodeRef.current) {
+      transformerRef.current.nodes([selectedNodeRef.current]);
+      transformerRef.current.getLayer()?.batchDraw();
+    }
+  }, [selectedElementId, sortedElements]);
 
   const stagePosition = useMemo(
     () =>
@@ -588,7 +676,7 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
         ref={stageRef}
         width={dimensions.width}
         height={dimensions.height}
-        draggable={tool === "hand"}
+        draggable={tool === "hand" && !selectedElementId}
         dragBoundFunc={(pos) =>
           clampViewport(
             pos.x,
@@ -599,6 +687,8 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           )
         }
         onWheel={handleWheel}
+        onMouseDown={handleStageMouseDown}
+        onMouseUp={handleStageMouseUp}
         onClick={handleStageClick}
         onMouseMove={handleStageMouseMove}
         onDragStart={handleStageDragStart}
@@ -629,17 +719,22 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
           ))}
         </Layer>
         <Layer listening={true}>
-          {sortedElements.map((element) => (
-            <ElementNode
-              key={element.id}
-              element={element}
-              assetMap={assetMap}
-              tool={tool}
-              onUpdate={(props) =>
-                updateElementLocal(element.id, { props })
-              }
-            />
-          ))}
+          {sortedElements
+            .filter((el) => el.id !== selectedElementId)
+            .map((element) => (
+              <ElementNode
+                key={element.id}
+                element={element}
+                assetMap={assetMap}
+                tool={tool}
+                isSelected={false}
+                onSelect={() => setSelectedElementId(element.id)}
+                selectedNodeRef={undefined}
+                onUpdate={(props) =>
+                  updateElementLocal(element.id, { props })
+                }
+              />
+            ))}
           {lineStartPoint && lineEndPoint && tool === "line" && (
             <Line
               points={[
@@ -654,6 +749,76 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
               listening={false}
             />
           )}
+          {rectDrawStart && rectDrawCurrent && tool === "rectangle" && (
+            <Rect
+              x={Math.min(rectDrawStart.x, rectDrawCurrent.x)}
+              y={Math.min(rectDrawStart.y, rectDrawCurrent.y)}
+              width={Math.abs(rectDrawCurrent.x - rectDrawStart.x)}
+              height={Math.abs(rectDrawCurrent.y - rectDrawStart.y)}
+              stroke="#52525b"
+              strokeWidth={1}
+              dash={[4, 4]}
+              listening={false}
+            />
+          )}
+          {selectedElementId &&
+            ["rectangle", "asset"].includes(
+              elements.find((e) => e.id === selectedElementId)?.type ?? "",
+            ) && (
+            <Transformer
+              ref={transformerRef}
+              rotateEnabled={false}
+              rotateLineVisible={false}
+              boundBoxFunc={(oldBox, newBox) => {
+                if (
+                  Math.abs(newBox.width) < MIN_RECT_SIZE ||
+                  Math.abs(newBox.height) < MIN_RECT_SIZE
+                ) {
+                  return oldBox;
+                }
+                return newBox;
+              }}
+              onTransformEnd={() => {
+                const node = selectedNodeRef.current;
+                if (!node || !selectedElementId) return;
+                const el = elements.find((x) => x.id === selectedElementId);
+                if (!el || (el.type !== "rectangle" && el.type !== "asset"))
+                  return;
+                const props = el.props as RectangleProps | AssetProps;
+                const scaleX = node.scaleX();
+                const scaleY = node.scaleY();
+                node.scaleX(1);
+                node.scaleY(1);
+                updateElementLocal(selectedElementId, {
+                  props: {
+                    ...props,
+                    x: node.x(),
+                    y: node.y(),
+                    width: Math.max(MIN_RECT_SIZE, (props.width ?? 0) * scaleX),
+                    height: Math.max(MIN_RECT_SIZE, (props.height ?? 0) * scaleY),
+                  },
+                });
+              }}
+            />
+          )}
+          {selectedElementId &&
+            sortedElements
+              .filter((el) => el.id === selectedElementId)
+              .map((element) => (
+                <ElementNode
+                  key={element.id}
+                  element={element}
+                  assetMap={assetMap}
+                  tool={tool}
+                  isSelected={true}
+                  onSelect={() => setSelectedElementId(element.id)}
+                  selectedNodeRef={selectedNodeRef}
+                  transformerRef={transformerRef}
+                  onUpdate={(props) =>
+                    updateElementLocal(element.id, { props })
+                  }
+                />
+              ))}
         </Layer>
       </Stage>
 
@@ -734,38 +899,90 @@ interface ElementNodeProps {
   element: Element;
   assetMap: Map<string, { id: string; name: string }>;
   tool: CanvasTool;
+  isSelected?: boolean;
+  onSelect?: () => void;
+  selectedNodeRef?: React.MutableRefObject<Konva.Node | null>;
+  transformerRef?: React.RefObject<Konva.Transformer | null>;
   onUpdate: (props: Partial<RectangleProps | LineProps | TextProps | AssetProps>) => void;
 }
 
-function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
+function ElementNode({
+  element,
+  assetMap,
+  tool,
+  isSelected,
+  onSelect,
+  selectedNodeRef,
+  transformerRef,
+  onUpdate,
+}: ElementNodeProps) {
   const draggable = tool === "pointer";
+  const canSelect = tool === "pointer";
+
+  const handleDragStart = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      e.cancelBubble = true;
+    },
+    [],
+  );
+
+  const handleDragMove = useCallback(
+    (e: Konva.KonvaEventObject<DragEvent>) => {
+      e.cancelBubble = true;
+      transformerRef?.current?.forceUpdate();
+      transformerRef?.current?.getLayer()?.batchDraw();
+    },
+    [transformerRef],
+  );
+
+  const handleClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      e.cancelBubble = true;
+      if (canSelect && onSelect) onSelect();
+    },
+    [canSelect, onSelect],
+  );
+
+  const setRef = useCallback(
+    (node: Konva.Node | null) => {
+      if (selectedNodeRef) {
+        selectedNodeRef.current = isSelected ? node : null;
+      }
+    },
+    [selectedNodeRef, isSelected],
+  );
 
   const handleDragEnd = useCallback(
     (e: Konva.KonvaEventObject<DragEvent>) => {
+      e.cancelBubble = true;
       const node = e.target;
       const x = node.x();
       const y = node.y();
       if (element.type === "rectangle" || element.type === "text") {
         const props = element.props as RectangleProps | TextProps;
-        console.log(`${LOG_PREFIX} Element drag end: ${element.type} ${element.id} → (${x.toFixed(0)}, ${y.toFixed(0)})`);
         onUpdate({ ...props, x, y });
       } else if (element.type === "asset") {
         const props = element.props as AssetProps;
-        console.log(`${LOG_PREFIX} Element drag end: asset ${element.id} → (${x.toFixed(0)}, ${y.toFixed(0)})`);
         onUpdate({ ...props, x, y });
       }
+      transformerRef?.current?.forceUpdate();
     },
-    [element, onUpdate],
+    [element, onUpdate, transformerRef],
   );
 
   if (element.type === "rectangle") {
     const p = element.props as RectangleProps;
     return (
       <Group
+        ref={setRef}
         name="element"
         x={p.x}
         y={p.y}
         draggable={draggable}
+        cursor={draggable ? "grab" : "default"}
+        onClick={handleClick}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         dragBoundFunc={(pos) => ({
           x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.width, pos.x)),
@@ -777,7 +994,7 @@ function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
           y={0}
           width={p.width}
           height={p.height}
-          fill={p.fill ?? "#404040"}
+          fill={p.fill ?? "transparent"}
           stroke={p.stroke ?? "#52525b"}
           strokeWidth={p.strokeWidth ?? 1}
         />
@@ -789,10 +1006,13 @@ function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
     const p = element.props as LineProps;
     return (
       <Line
+        ref={setRef}
         name="element"
         points={p.points}
         stroke={p.stroke ?? "#a3a3a3"}
         strokeWidth={p.strokeWidth ?? 2}
+        cursor={canSelect ? "pointer" : "default"}
+        onClick={handleClick}
         listening={true}
       />
     );
@@ -802,10 +1022,15 @@ function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
     const p = element.props as TextProps;
     return (
       <Group
+        ref={setRef}
         name="element"
         x={p.x}
         y={p.y}
         draggable={draggable}
+        cursor={draggable ? "grab" : "default"}
+        onClick={handleClick}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         dragBoundFunc={(pos) => ({
           x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF, pos.x)),
@@ -830,10 +1055,15 @@ function ElementNode({ element, assetMap, tool, onUpdate }: ElementNodeProps) {
     const asset = assetMap.get(p.asset_id);
     return (
       <Group
+        ref={setRef}
         name="element"
         x={p.x}
         y={p.y}
         draggable={draggable}
+        cursor={draggable ? "grab" : "default"}
+        onClick={handleClick}
+        onDragStart={handleDragStart}
+        onDragMove={handleDragMove}
         onDragEnd={handleDragEnd}
         dragBoundFunc={(pos) => ({
           x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - p.width, pos.x)),
