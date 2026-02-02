@@ -10,11 +10,15 @@ import {
 } from "react";
 import {
   Hand,
+  FilePlus,
   Lock,
   Minus,
   MousePointer2,
+  PencilLine,
   Plus,
   Redo2,
+  Square,
+  Type,
   Undo2,
 } from "lucide-react";
 import { Stage, Layer, Group, Rect, Line, Text } from "react-konva";
@@ -35,7 +39,14 @@ const GRID_STROKE = "#404040";
 const GRID_STROKE_WIDTH = 0.5;
 const CANVAS_FILL = "#171717";
 
-type CanvasTool = "lock" | "hand" | "pointer";
+type CanvasTool =
+  | "lock"
+  | "hand"
+  | "pointer"
+  | "rectangle"
+  | "line"
+  | "text"
+  | "asset";
 
 /** Keep the visible area inside the canvas so we never show black outside the grid. */
 function clampViewport(
@@ -280,7 +291,12 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         ? isPanning
           ? "cursor-grabbing"
           : "cursor-grab"
-        : "cursor-default";
+        : tool === "rectangle" ||
+            tool === "line" ||
+            tool === "text" ||
+            tool === "asset"
+          ? "cursor-crosshair"
+          : "cursor-default";
 
   if (dimensions.width <= 0 || dimensions.height <= 0) {
     return (
@@ -297,7 +313,7 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       ref={containerRef}
       className={`absolute inset-0 bg-black ${cursorClass}`}
     >
-      <div className="absolute top-3 left-3 z-10 cursor-pointer">
+      <div className="absolute top-3 left-3 z-10 flex cursor-pointer items-center gap-2">
         <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
           <button
             type="button"
@@ -328,6 +344,49 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
             aria-pressed={tool === "pointer"}
           >
             <MousePointer2 className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="flex items-center rounded-lg border border-neutral-700 bg-neutral-900 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setTool("rectangle")}
+            className={`rounded-l-md ${toolButtonClass} ${tool === "rectangle" ? toolButtonActiveClass : ""}`}
+            title="Rectangle"
+            aria-label="Rectangle (draw)"
+            aria-pressed={tool === "rectangle"}
+          >
+            <Square className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("line")}
+            className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "line" ? toolButtonActiveClass : ""}`}
+            title="Line"
+            aria-label="Line (draw)"
+            aria-pressed={tool === "line"}
+          >
+            <PencilLine className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("text")}
+            className={`border-l border-neutral-700 ${toolButtonClass} ${tool === "text" ? toolButtonActiveClass : ""}`}
+            title="Text"
+            aria-label="Text (draw)"
+            aria-pressed={tool === "text"}
+          >
+            <Type className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setTool("asset")}
+            className={`rounded-r-md border-l border-neutral-700 ${toolButtonClass} ${tool === "asset" ? toolButtonActiveClass : ""}`}
+            title="Add asset (click canvas to upload at that spot)"
+            aria-label="Add asset (upload)"
+            aria-pressed={tool === "asset"}
+          >
+            <FilePlus className="h-4 w-4" />
           </button>
         </div>
       </div>
@@ -434,7 +493,6 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
             <Redo2 className="h-4 w-4" />
           </button>
         </div>
-
       </div>
     </div>
   );
