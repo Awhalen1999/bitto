@@ -1,7 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { KonvaCanvas } from "@/lib/components/canvas/KonvaCanvas";
+
+const KonvaCanvas = dynamic(
+  () =>
+    import("@/lib/components/canvas/KonvaCanvas").then((mod) => ({
+      default: mod.KonvaCanvas,
+    })),
+  { ssr: false }
+);
 
 export default function CanvasEditorPage() {
   const params = useParams();
