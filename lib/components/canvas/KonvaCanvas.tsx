@@ -23,12 +23,9 @@ import {
   Type,
   Undo2,
 } from "lucide-react";
-import { Stage, Layer, Group, Rect, Line, Text } from "react-konva";
+import { Stage, Layer, Rect, Line } from "react-konva";
 import type Konva from "konva";
 import { useFile } from "@/lib/hooks/useFile";
-import { useFileAssets } from "@/lib/hooks/useFileAssets";
-import { useUpdateAsset } from "@/lib/hooks/useUpdateAsset";
-import type { Asset } from "@/lib/api/assets";
 
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 5;
@@ -93,8 +90,6 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
   const [isPanning, setIsPanning] = useState(false);
 
   const { data: file, isLoading: isFileLoading } = useFile(fileId);
-  const { data: assets = [] } = useFileAssets(fileId);
-  const { mutate: updateAsset } = useUpdateAsset(fileId);
 
   const measureRef = useRef(() => {
     const el = containerRef.current;
@@ -242,15 +237,6 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
     stageRef.current?.position({ x, y });
     setViewport((prev) => ({ ...prev, x, y }));
   }, [viewport.scale, dimensions]);
-
-  const handleAssetDragEnd = useCallback(
-    (assetId: string, x: number, y: number) => {
-      updateAsset({ assetId, data: { x, y } });
-    },
-    [updateAsset],
-  );
-
-  const sortedAssets = [...assets].sort((a, b) => a.z_index - b.z_index);
 
   const stagePosition = useMemo(
     () =>
@@ -470,16 +456,6 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
             />
           ))}
         </Layer>
-        <Layer>
-          {sortedAssets.map((asset) => (
-            <AssetNode
-              key={asset.id}
-              asset={asset}
-              tool={tool}
-              onDragEnd={handleAssetDragEnd}
-            />
-          ))}
-        </Layer>
       </Stage>
 
       <div className="absolute bottom-3 left-3 flex cursor-pointer items-center gap-2">
@@ -532,60 +508,5 @@ export function KonvaCanvas({ fileId }: KonvaCanvasProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-interface AssetNodeProps {
-  asset: Asset;
-  tool: CanvasTool;
-  onDragEnd: (assetId: string, x: number, y: number) => void;
-}
-
-function AssetNode({ asset, tool, onDragEnd }: AssetNodeProps) {
-  const [isDragging, setIsDragging] = useState(false);
-  const draggable = tool === "pointer";
-
-  const dragBoundFunc = useCallback(
-    (pos: { x: number; y: number }) => ({
-      x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - asset.width, pos.x)),
-      y: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - asset.height, pos.y)),
-    }),
-    [asset.width, asset.height],
-  );
-
-  return (
-    <Group
-      x={asset.x}
-      y={asset.y}
-      draggable={draggable}
-      dragBoundFunc={dragBoundFunc}
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={(e) => {
-        setIsDragging(false);
-        onDragEnd(asset.id, e.target.x(), e.target.y());
-      }}
-    >
-      <Rect
-        x={0}
-        y={0}
-        width={asset.width}
-        height={asset.height}
-        fill={isDragging ? "#52525b" : "#404040"}
-        stroke="#52525b"
-        strokeWidth={1}
-        listening={true}
-      />
-      <Text
-        x={0}
-        y={asset.height / 2 - 8}
-        width={asset.width}
-        text={asset.name}
-        fontSize={12}
-        fontFamily="system-ui, sans-serif"
-        fill="white"
-        align="center"
-        listening={false}
-      />
-    </Group>
   );
 }

@@ -6,11 +6,8 @@ export interface Asset {
   name: string;
   file_type: string;
   r2_url: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  z_index: number;
+  thumbnail_url?: string;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -28,11 +25,8 @@ export async function createAsset(data: {
   name: string;
   file_type: string;
   r2_url: string;
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  z_index?: number;
+  thumbnail_url?: string;
+  metadata?: Record<string, unknown>;
 }): Promise<Asset> {
   return apiClient("/api/assets", {
     method: "POST",
@@ -44,11 +38,8 @@ export async function updateAsset(
   assetId: string,
   data: {
     name?: string;
-    x?: number;
-    y?: number;
-    width?: number;
-    height?: number;
-    z_index?: number;
+    thumbnail_url?: string;
+    metadata?: Record<string, unknown>;
   },
 ): Promise<Asset> {
   return apiClient(`/api/assets/${assetId}`, {

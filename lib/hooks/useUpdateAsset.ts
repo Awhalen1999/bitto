@@ -15,11 +15,8 @@ export function useUpdateAsset(fileId: string) {
       assetId: string;
       data: {
         name?: string;
-        x?: number;
-        y?: number;
-        width?: number;
-        height?: number;
-        z_index?: number;
+        thumbnail_url?: string;
+        metadata?: Record<string, unknown>;
       };
     }) => updateAsset(assetId, data),
     onSuccess: () => {
