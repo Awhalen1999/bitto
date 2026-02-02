@@ -1,6 +1,13 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect, useLayoutEffect, useMemo } from "react";
+import {
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+} from "react";
 import {
   Hand,
   Lock,
@@ -156,7 +163,13 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
       const sceneY = (centerY - viewport.y) / oldScale;
       let newX = centerX - sceneX * newScale;
       let newY = centerY - sceneY * newScale;
-      const clamped = clampViewport(newX, newY, newScale, dimensions.width, dimensions.height);
+      const clamped = clampViewport(
+        newX,
+        newY,
+        newScale,
+        dimensions.width,
+        dimensions.height,
+      );
       newX = clamped.x;
       newY = clamped.y;
 
@@ -271,7 +284,13 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
             dimensions.height,
           )
         : { x: viewport.x, y: viewport.y },
-    [viewport.x, viewport.y, viewport.scale, dimensions.width, dimensions.height],
+    [
+      viewport.x,
+      viewport.y,
+      viewport.scale,
+      dimensions.width,
+      dimensions.height,
+    ],
   );
 
   const gridLines = useMemo(() => {
@@ -376,7 +395,13 @@ export function KonvaCanvas({ canvasId }: KonvaCanvasProps) {
         height={dimensions.height}
         draggable={tool === "hand"}
         dragBoundFunc={(pos) =>
-          clampViewport(pos.x, pos.y, viewport.scale, dimensions.width, dimensions.height)
+          clampViewport(
+            pos.x,
+            pos.y,
+            viewport.scale,
+            dimensions.width,
+            dimensions.height,
+          )
         }
         onWheel={handleWheel}
         onDragStart={handleStageDragStart}
@@ -489,14 +514,8 @@ function AssetNode({ asset, tool, onDragEnd }: AssetNodeProps) {
 
   const dragBoundFunc = useCallback(
     (pos: { x: number; y: number }) => ({
-      x: Math.max(
-        -CANVAS_HALF,
-        Math.min(CANVAS_HALF - asset.width, pos.x),
-      ),
-      y: Math.max(
-        -CANVAS_HALF,
-        Math.min(CANVAS_HALF - asset.height, pos.y),
-      ),
+      x: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - asset.width, pos.x)),
+      y: Math.max(-CANVAS_HALF, Math.min(CANVAS_HALF - asset.height, pos.y)),
     }),
     [asset.width, asset.height],
   );
